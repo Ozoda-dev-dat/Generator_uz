@@ -2269,73 +2269,140 @@ Qarz ma'lumotlari saqlandi. Rahmat!
 
     @bot.message_handler(func=lambda message: message.text == "💬 Admin bilan bog'lanish")
     def start_customer_chat(message):
-        """Start customer chat with admin"""
-        set_user_state(message.chat.id, "customer_chat")
+        """Start customer chat with admin - first collect phone number"""
+        set_user_state(message.chat.id, "customer_phone")
         
-        markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
-        markup.add("❌ Suhbatni tugatish")
+        markup = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
+        phone_btn = types.KeyboardButton("📱 Telefon raqamini yuborish", request_contact=True)
+        markup.add(phone_btn)
+        markup.add("🔙 Bekor qilish")
         
         bot.send_message(
             message.chat.id,
-            "💬 Admin bilan suhbat boshlandi!\n\n"
-            "Xabaringizni yozing. Admin sizga javob beradi.\n"
-            "Suhbatni tugatish uchun '❌ Suhbatni tugatish' tugmasini bosing.",
+            "📱 Admin bilan bog'lanish uchun telefon raqamingizni yuboring:\n\n"
+            "Telefon raqami admin uchun zarur.",
             reply_markup=markup
         )
-        
-        # Notify admin about new customer chat
-        try:
-            customer_name = message.from_user.first_name or "Noma'lum mijoz"
-            customer_username = f"@{message.from_user.username}" if message.from_user.username else "Username yo'q"
+
+    @bot.message_handler(content_types=['contact'], func=lambda message: get_user_state(message.chat.id)[0] == "customer_phone")
+    def get_customer_phone(message):
+        """Get customer phone number"""
+        if message.contact:
+            phone_number = message.contact.phone_number
+            temp_data = {"phone": phone_number, "name": message.from_user.first_name or "Anonim"}
+            set_user_state(message.chat.id, "customer_location", serialize_json_data(temp_data))
             
-            # Add message to database
-            add_message(message.chat.id, ADMIN_CHAT_ID, "Yangi mijoz suhbati boshlandi", "customer_start")
+            markup = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
+            location_btn = types.KeyboardButton("📍 Joylashuvni yuborish", request_location=True)
+            markup.add(location_btn)
+            markup.add("🔙 Bekor qilish")
             
             bot.send_message(
-                ADMIN_CHAT_ID,
-                f"🔔 Yangi mijoz suhbati boshlandi!\n\n"
-                f"👤 Mijoz: {customer_name}\n"
-                f"📱 Username: {customer_username}\n"
-                f"🆔 Chat ID: {message.chat.id}\n\n"
-                f"Javob berish uchun: /reply {message.chat.id} [xabar]"
+                message.chat.id,
+                "📍 Endi joylashuvingizni yuboring:\n\n"
+                "Bu admin uchun zarur ma'lumot.",
+                reply_markup=markup
             )
-        except:
-            pass
+        else:
+            bot.send_message(message.chat.id, "❌ Telefon raqamini yuborishda xatolik. Qayta urinib ko'ring.")
+
+    @bot.message_handler(func=lambda message: get_user_state(message.chat.id)[0] == "customer_phone" and message.text == "🔙 Bekor qilish")
+    def cancel_customer_phone(message):
+        """Cancel customer phone input"""
+        clear_user_state(message.chat.id)
+        customer_panel(message)
+
+    @bot.message_handler(content_types=['location'], func=lambda message: get_user_state(message.chat.id)[0] == "customer_location")
+    def get_customer_location(message):
+        """Get customer location and start chat"""
+        state, data_str = get_user_state(message.chat.id)
+        temp_data = parse_json_data(data_str)
+        
+        if message.location:
+            latitude = message.location.latitude
+            longitude = message.location.longitude
+            
+            # Save customer info with location
+            temp_data.update({
+                "latitude": latitude,
+                "longitude": longitude,
+                "chat_id": message.chat.id,
+                "username": message.from_user.username or ""
+            })
+            
+            set_user_state(message.chat.id, "customer_chat", serialize_json_data(temp_data))
+            
+            # Notify admin about new customer
+            customer_info = f"""
+👤 Yangi mijoz bog'landi!
+
+📱 Ism: {temp_data['name']}
+📞 Telefon: {temp_data['phone']}
+🆔 Chat ID: {message.chat.id}
+👤 Username: @{temp_data['username']} 
+📍 Lokatsiya: {latitude}, {longitude}
+🕐 Vaqt: {datetime.now().strftime('%d.%m.%Y %H:%M')}
+
+Mijoz admindan javob kutmoqda.
+"""
+            
+            bot.send_message(ADMIN_CHAT_ID, customer_info)
+            bot.send_location(ADMIN_CHAT_ID, latitude, longitude)
+            
+            markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+            markup.add("❌ Suhbatni tugatish")
+            
+            bot.send_message(
+                message.chat.id,
+                "✅ Ma'lumotlaringiz adminga yuborildi!\n\n"
+                "💬 Endi xabaringizni yozing. Admin sizga javob beradi.\n"
+                "Suhbatni tugatish uchun tugmani bosing.",
+                reply_markup=markup
+            )
+        else:
+            bot.send_message(message.chat.id, "❌ Joylashuvni yuborishda xatolik. Qayta urinib ko'ring.")
+
+    @bot.message_handler(func=lambda message: get_user_state(message.chat.id)[0] == "customer_location" and message.text == "🔙 Bekor qilish")
+    def cancel_customer_location(message):
+        """Cancel customer location input"""
+        clear_user_state(message.chat.id)
+        customer_panel(message)
 
     @bot.message_handler(func=lambda message: get_user_state(message.chat.id)[0] == "customer_chat")
     def handle_customer_message(message):
-        """Handle customer messages"""
+        """Handle customer messages to admin"""
         if message.text == "❌ Suhbatni tugatish":
             clear_user_state(message.chat.id)
+            bot.send_message(
+                message.chat.id,
+                "✅ Suhbat tugatildi.\n\n"
+                "Yana bog'lanish kerak bo'lsa, admin bilan bog'lanish tugmasini bosing.",
+                reply_markup=types.ReplyKeyboardRemove()
+            )
             customer_panel(message)
             return
         
-        # Forward message to admin
-        try:
-            customer_name = message.from_user.first_name or "Noma'lum mijoz"
-            customer_username = f"@{message.from_user.username}" if message.from_user.username else ""
-            
-            admin_message = f"💬 Mijoz xabari:\n"
-            admin_message += f"👤 {customer_name} {customer_username}\n"
-            admin_message += f"🆔 {message.chat.id}\n\n"
-            admin_message += f"📝 {message.text}\n\n"
-            admin_message += f"Javob: /reply {message.chat.id} [xabar]"
-            
-            # Add message to database
-            add_message(message.chat.id, ADMIN_CHAT_ID, message.text, "customer_message")
-            
-            bot.send_message(ADMIN_CHAT_ID, admin_message)
-            
-            bot.send_message(
-                message.chat.id,
-                "✅ Xabaringiz adminga yuborildi. Javob kutib turing..."
-            )
-            
-        except Exception as e:
-            bot.send_message(
-                message.chat.id,
-                "❌ Xabar yuborishda xatolik yuz berdi. Qaytadan urinib ko'ring."
-            )
+        # Get customer data
+        state, data_str = get_user_state(message.chat.id)
+        customer_data = parse_json_data(data_str)
+        
+        # Forward message to admin with customer info
+        customer_info = f"""
+👤 Mijoz: {customer_data.get('name', 'Anonim')}
+📞 Telefon: {customer_data.get('phone', "Noma'lum")}
+🆔 Chat ID: {message.chat.id}
+👤 Username: @{customer_data.get('username', "yo'q")}
+"""
+        
+        forwarded_message = f"💬 Mijoz xabari:\n\n{customer_info}\n📝 Xabar: {message.text}"
+        
+        bot.send_message(ADMIN_CHAT_ID, forwarded_message)
+        
+        bot.send_message(
+            message.chat.id,
+            "✅ Xabaringiz adminga yuborildi!\n\n"
+            "Admin tez orada javob beradi."
+        )
 
     @bot.message_handler(commands=['reply'])
     def admin_reply_to_customer(message):

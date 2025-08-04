@@ -72,6 +72,13 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes (August 2025)
 
+### Enhanced Customer Contact System
+- **Phone Number Collection**: Mandatory phone number collection via Telegram contact sharing
+- **Location Request**: Required GPS location sharing for all customer inquiries
+- **Complete Customer Profile**: Admin receives name, phone, username, location, and timestamp
+- **Two-Step Verification**: Phone → Location → Chat activation sequence
+- **Enhanced Admin Notifications**: Full customer profile with interactive location data
+
 ### Advanced Payment Processing System
 - **Three-Way Payment Method**: Complete overhaul of task completion payment system
 - **Card Payment Flow**: Karta orqali to'lov with confirmation and transfer status notification
