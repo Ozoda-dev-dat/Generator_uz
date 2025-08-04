@@ -93,9 +93,9 @@ Preferred communication style: Simple, everyday language.
 - **Post-Task Motivation**: Random congratulatory messages after task completion with entertainment options
 - **Movie Download Feature**: Employees can search and get movie download links after completing tasks
 - **Music Streaming System**: Access to latest monthly music and search functionality for specific songs
-- **Restaurant Recommendations**: Location-based suggestions for popular chains (Evos, Oq Tepa, Lavash, etc.)
 - **Daily News Integration**: Web scraping for Uzbekistan and world news using trafilatura package
-- **Four Entertainment Categories**: Cinema, music, dining, and news with "skip" option
+- **Three Entertainment Categories**: Cinema, music, and news with "skip" option
+- **Restaurant System Removed**: Dining/restaurant recommendations completely removed from system
 
 ### Enhanced Data Management System
 - **Complete Ma'lumotlar Section**: Full activation with direct data insertion capabilities
@@ -126,8 +126,10 @@ Preferred communication style: Simple, everyday language.
 ### Advanced Entertainment System (August 2025)
 - **Complete Movie System**: 🎬 Kino ko'rish with 10+ popular movies, real streaming links, genre-based recommendations
 - **Comprehensive Music System**: 🎵 Musiqa tinglash with Uzbek/foreign music collections, genre-based playlists, smart search
+- **News System**: 📰 Yangiliklar with web scraping for real-time news from multiple sources
 - **Real Platform Integration**: Netflix, Spotify, YouTube Music, Apple Music, Amazon Prime links
 - **Cultural Content**: Uzbek artists (Shahzoda, Rayhon) and international hits with detailed descriptions
+- **Streamlined Design**: Restaurant system removed for simplified entertainment experience
 
 ### Technical Improvements
 - **Session Management**: Enhanced admin_data dictionary initialization preventing KeyError exceptions

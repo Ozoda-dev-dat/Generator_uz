@@ -2046,7 +2046,7 @@ Vazifani boshlash uchun "👤 Xodim" tugmasini bosing va vazifalar ro'yxatini ko
         
         markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
         markup.add("🎬 Kino ko'rish", "🎵 Musiqa tinglash")
-        markup.add("🍽 Ovqatlanish", "📰 Yangiliklar")
+        markup.add("📰 Yangiliklar")
         markup.add("🔙 Asosiy menyu")
         
         set_user_state(message.chat.id, "entertainment_menu")
@@ -2057,7 +2057,6 @@ Vazifani boshlash uchun "👤 Xodim" tugmasini bosing va vazifalar ro'yxatini ko
             "🎊 Ko'ngilochar bo'limiga xush kelibsiz!\n\n"
             "🎬 Kino - yangi filmlarni tomosha qiling\n"
             "🎵 Musiqa - eng so'nggi qo'shiqlarni tinglang\n"
-            "🍽 Ovqatlanish - yaqin atrofdagi restoranlar\n"
             "📰 Yangiliklar - bugungi eng muhim xabarlar\n"
             "🔙 Asosiy menyu - bosh sahifaga qaytish\n\n"
             "Nima qilishni xohlaysiz?",
@@ -3111,7 +3110,7 @@ Mijoz admindan javob kutmoqda.
         
         markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
         markup.add("🎬 Kino ko'rish", "🎵 Musiqa tinglash")
-        markup.add("🍽 Ovqatlanish", "📰 Yangiliklar")
+        markup.add("📰 Yangiliklar")
         markup.add("🔙 Asosiy menyu")
         
         set_user_state(message.chat.id, "entertainment_menu")
@@ -3122,7 +3121,6 @@ Mijoz admindan javob kutmoqda.
             "🎊 Vazifa bajarilganligi munosabati bilan sizga bir necha variantni taklif qilamiz:\n\n"
             "🎬 Kino - yangi filmlarni tomosha qiling\n"
             "🎵 Musiqa - eng so'nggi qo'shiqlarni tinglang\n"
-            "🍽 Ovqatlanish - yaqin atrofdagi restoranlar\n"
             "📰 Yangiliklar - bugungi eng muhim xabarlar\n"
             "🔙 Asosiy menyu - bosh sahifaga qaytish\n\n"
             "Nima qilishni xohlaysiz?",
@@ -3152,9 +3150,6 @@ Mijoz admindan javob kutmoqda.
             
         elif message.text == "🎵 Musiqa tinglash":
             handle_music_choice(message)
-            
-        elif message.text == "🍽 Ovqatlanish":
-            request_location_for_restaurants(message)
             
         elif message.text == "📰 Yangiliklar":
             show_news_categories(message)
@@ -4148,204 +4143,11 @@ Masalan: "Action" yoki "Comedy"
         clear_user_state(message.chat.id)
         show_employee_panel(message)
 
-    def request_location_for_restaurants(message):
-        """Request location for restaurant recommendations"""
-        markup = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
-        location_btn = types.KeyboardButton("📍 Joylashuvimni yuborish", request_location=True)
-        markup.add(location_btn)
-        markup.add("🔙 Bekor qilish")
-        
-        set_user_state(message.chat.id, "restaurant_location")
-        
-        bot.send_message(
-            message.chat.id,
-            "📍 Yaqin atrofdagi restoranlarni topish uchun joylashuvingizni yuboring:\n\n"
-            "Sizning joylashuvingiz asosida eng yaxshi tavsiyalar beramiz!",
-            reply_markup=markup
-        )
 
-    @bot.message_handler(content_types=['location'], func=lambda message: get_user_state(message.chat.id)[0] == "restaurant_location")
-    def handle_restaurant_location(message):
-        """Handle restaurant location and show recommendations"""
-        if message.location:
-            latitude = message.location.latitude
-            longitude = message.location.longitude
-            
-            bot.send_message(
-                message.chat.id,
-                "🔍 Yaqin atrofdagi restoranlar qidirilmoqda...\n"
-                "⏳ Biroz kuting..."
-            )
-            
-            # Calculate distance-based recommendations (location data stays internal)
-            import math
-            
-            def calculate_distance(lat1, lon1, lat2, lon2):
-                """Calculate approximate distance between two points"""
-                # Simple distance calculation for sorting
-                return math.sqrt((lat2 - lat1)**2 + (lon2 - lon1)**2)
-            
-            # Define restaurant locations (approximate Tashkent coordinates)
-            restaurants = [
-                {
-                    "name": "🍟 **EVOS**",
-                    "locations": [
-                        {"address": "Amir Temur ko'chasi 107A", "lat": 41.311081, "lon": 69.240562},
-                        {"address": "Buyuk Ipak Yo'li 187", "lat": 41.326055, "lon": 69.228500},
-                        {"address": "Yunusobod 4-mavze 12-uy", "lat": 41.363889, "lon": 69.289167},
-                        {"address": "Chilonzor Qatortol ko'chasi 56", "lat": 41.275278, "lon": 69.203056}
-                    ],
-                    "rating": "⭐️ 4.5/5 - Fast food, burger, lavash",
-                    "phone": "📞 +998 71 200 05 05"
-                },
-                {
-                    "name": "🍕 **MAXWAY**",
-                    "locations": [
-                        {"address": "Chilonzor Qatortol ko'chasi 80", "lat": 41.275000, "lon": 69.203333},
-                        {"address": "Yunusobod 4-mavze Bog'ishamol ko'chasi", "lat": 41.363611, "lon": 69.289444},
-                        {"address": "Shayxontohur Nukus ko'chasi 52", "lat": 41.318611, "lon": 69.254722},
-                        {"address": "Mirzo Ulug'bek Labzak ko'chasi 45", "lat": 41.338889, "lon": 69.334167}
-                    ],
-                    "rating": "⭐️ 4.4/5 - Pizza, burger, chicken",
-                    "phone": "📞 +998 71 205 15 15"
-                },
-                {
-                    "name": "🍗 **BESHQOZON**",
-                    "locations": [
-                        {"address": "Chilonzor Qatortol ko'chasi 88", "lat": 41.275556, "lon": 69.203611},
-                        {"address": "Yakkasaroy Bobur ko'chasi 12", "lat": 41.301667, "lon": 69.240833},
-                        {"address": "Mirobod Oybek ko'chasi 35", "lat": 41.320556, "lon": 69.258333},
-                        {"address": "Yashnobod Furqat ko'chasi 225", "lat": 41.330000, "lon": 69.315000}
-                    ],
-                    "rating": "⭐️ 4.6/5 - Kabob, manta, lag'mon",
-                    "phone": "📞 +998 71 203 50 50"
-                },
-                {
-                    "name": "🥘 **OQ TEPA**",
-                    "locations": [
-                        {"address": "Mirzo Ulug'bek Labzak ko'chasi 55", "lat": 41.339167, "lon": 69.334444},
-                        {"address": "Yunusobod 4-mavze 15-uy", "lat": 41.364167, "lon": 69.289722},
-                        {"address": "Chilonzor Qatortol ko'chasi 112", "lat": 41.275833, "lon": 69.203889},
-                        {"address": "Yakkasaroy A.Qodiriy ko'chasi 28", "lat": 41.301944, "lon": 69.241111}
-                    ],
-                    "rating": "⭐️ 4.4/5 - Milliy oshlar, palov",
-                    "phone": "📞 +998 71 201 30 30"
-                },
-                {
-                    "name": "🥙 **LAVASH**",
-                    "locations": [
-                        {"address": "Buyuk Ipak Yo'li 187B", "lat": 41.326333, "lon": 69.228778},
-                        {"address": "Amir Temur ko'chasi 125", "lat": 41.311389, "lon": 69.240833},
-                        {"address": "Chilonzor Qatortol ko'chasi 75", "lat": 41.275556, "lon": 69.203333},
-                        {"address": "Yunusobod Bog'ishamol ko'chasi 14", "lat": 41.363889, "lon": 69.289444}
-                    ],
-                    "rating": "⭐️ 4.3/5 - Lavash, shawarma",
-                    "phone": "📞 +998 71 202 40 40"
-                },
-                {
-                    "name": "🥩 **BOTIR**",
-                    "locations": [
-                        {"address": "Shayxontohur Nukus ko'chasi 45", "lat": 41.318333, "lon": 69.254444},
-                        {"address": "Mirzo Ulug'bek Labzak ko'chasi 67", "lat": 41.339444, "lon": 69.334722},
-                        {"address": "Chilonzor Qatortol ko'chasi 95", "lat": 41.276111, "lon": 69.204167},
-                        {"address": "Yunusobod 4-mavze 8-uy", "lat": 41.363611, "lon": 69.289167}
-                    ],
-                    "rating": "⭐️ 4.5/5 - Kabob, bifshteks",
-                    "phone": "📞 +998 71 204 60 60"
-                },
-                {
-                    "name": "🍛 **ACHIQ OSH**",
-                    "locations": [
-                        {"address": "Olmazor Farobiy ko'chasi 125", "lat": 41.350000, "lon": 69.215000},
-                        {"address": "Mirabad Oybek ko'chasi 58", "lat": 41.320833, "lon": 69.258611},
-                        {"address": "Chilonzor Qatortol ko'chasi 145", "lat": 41.276389, "lon": 69.204444},
-                        {"address": "Yakkasaroy Bobur ko'chasi 35", "lat": 41.302222, "lon": 69.241389}
-                    ],
-                    "rating": "⭐️ 4.7/5 - Milliy oshlar, palov",
-                    "phone": "📞 +998 71 206 70 70"
-                },
-                {
-                    "name": "🍗 **KFC**",
-                    "locations": [
-                        {"address": "Tashkent City, Amir Temur 15", "lat": 41.310833, "lon": 69.240278},
-                        {"address": "Mega Planet, Buyuk Ipak Yo'li", "lat": 41.325833, "lon": 69.228056},
-                        {"address": "Next, Labzak ko'chasi 404", "lat": 41.339722, "lon": 69.335000},
-                        {"address": "Compass, Shota Rustaveli 62", "lat": 41.295556, "lon": 69.265000}
-                    ],
-                    "rating": "⭐️ 4.1/5 - Tovuq, kartoshka",
-                    "phone": "📞 +998 71 207 25 25"
-                },
-                {
-                    "name": "🍽 **OLIM POLVON**",
-                    "locations": [
-                        {"address": "Chilonzor Qatortol ko'chasi 105", "lat": 41.276667, "lon": 69.204722},
-                        {"address": "Mirzo Ulug'bek Labzak ko'chasi 88", "lat": 41.340000, "lon": 69.335278},
-                        {"address": "Yunusobod 4-mavze 22-uy", "lat": 41.364444, "lon": 69.290000},
-                        {"address": "Yakkasaroy A.Qodiriy ko'chasi 45", "lat": 41.302500, "lon": 69.241667}
-                    ],
-                    "rating": "⭐️ 4.8/5 - Palov, milliy taomlar",
-                    "phone": "📞 +998 71 208 80 80"
-                }
-            ]
-            
-            # Find closest locations for each restaurant
-            closest_restaurants = []
-            for restaurant in restaurants:
-                closest_location = min(restaurant["locations"], 
-                                     key=lambda loc: calculate_distance(latitude, longitude, loc["lat"], loc["lon"]))
-                distance = calculate_distance(latitude, longitude, closest_location["lat"], closest_location["lon"]) * 111  # Convert to approximate km
-                
-                closest_restaurants.append({
-                    "restaurant": restaurant,
-                    "closest_location": closest_location,
-                    "distance": distance
-                })
-            
-            # Sort by distance
-            closest_restaurants.sort(key=lambda x: x["distance"])
-            
-            # Build recommendation message
-            restaurant_recommendations = "🍽 **Yaqin atrofdagi restoranlar**\n"
-            restaurant_recommendations += "📍 Sizning joylashuvingizga eng yaqin bo'lgan restoranlar:\n\n"
-            restaurant_recommendations += "🏪 **Yaqinlik bo'yicha tartiblangan:**\n\n"
-            
-            for i, item in enumerate(closest_restaurants[:6]):  # Show top 6 closest
-                restaurant = item["restaurant"]
-                location = item["closest_location"]
-                distance = item["distance"]
-                
-                restaurant_recommendations += f"{restaurant['name']}\n"
-                restaurant_recommendations += f"📍 {location['address']} - {distance:.1f} km\n"
-                restaurant_recommendations += f"{restaurant['rating']}\n"
-                restaurant_recommendations += f"{restaurant['phone']}\n\n"
-            
-            restaurant_recommendations += "🍽 **Yaxshi ishtaha!**\n"
-            restaurant_recommendations += "💡 Batafsil ma'lumot uchun restoranlarga qo'ng'iroq qiling."
-            
-            bot.send_message(message.chat.id, restaurant_recommendations)
-        else:
-            bot.send_message(message.chat.id, "❌ Joylashuv olinmadi. Qayta urinib ko'ring.")
-        
-        clear_user_state(message.chat.id)
-        show_employee_panel(message)
 
-    @bot.message_handler(func=lambda message: get_user_state(message.chat.id)[0] == "restaurant_location" and message.text == "🔙 Bekor qilish")
-    def cancel_restaurant_location(message):
-        """Cancel restaurant location request"""
-        clear_user_state(message.chat.id)
-        start_motivation_system(message)
 
-    @bot.message_handler(func=lambda message: get_user_state(message.chat.id)[0] == "restaurant_location" and message.content_type == 'text')
-    def handle_restaurant_text_cancel(message):
-        """Handle text messages in restaurant location state"""
-        if message.text == "🔙 Bekor qilish":
-            clear_user_state(message.chat.id)
-            start_motivation_system(message)
-        else:
-            bot.send_message(
-                message.chat.id,
-                "📍 Iltimos, joylashuvingizni yuboring yoki '🔙 Bekor qilish' tugmasini bosing."
-            )
+
+
 
     def get_daily_news(message):
         """Get daily world and Uzbekistan news using web scraping"""
