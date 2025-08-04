@@ -4177,10 +4177,10 @@ Masalan: "Action" yoki "Comedy"
                 "⏳ Biroz kuting..."
             )
             
-            # Show restaurant recommendations
-            restaurant_recommendations = f"""
+            # Show restaurant recommendations (location data stays internal)
+            restaurant_recommendations = """
 🍽 **Yaqin atrofdagi restoranlar**
-📍 Sizning joylashuvingiz: {latitude:.4f}, {longitude:.4f}
+📍 Sizning hududingizda mavjud eng yaxshi tavsiyalar:
 
 🏪 **Mashhur zanjir restoranlar:**
 
