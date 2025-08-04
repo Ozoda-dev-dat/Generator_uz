@@ -2944,7 +2944,7 @@ Mijoz admindan javob kutmoqda.
         markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
         markup.add("🎬 Kino ko'rish", "🎵 Musiqa tinglash")
         markup.add("🍽 Ovqatlanish", "📰 Yangiliklar")
-        markup.add("❌ Hech narsa", "🔙 Asosiy menyu")
+        markup.add("🔙 Asosiy menyu")
         
         set_user_state(message.chat.id, "entertainment_menu")
         
@@ -2955,7 +2955,8 @@ Mijoz admindan javob kutmoqda.
             "🎬 Kino - yangi filmlarni tomosha qiling\n"
             "🎵 Musiqa - eng so'nggi qo'shiqlarni tinglang\n"
             "🍽 Ovqatlanish - yaqin atrofdagi restoranlar\n"
-            "📰 Yangiliklar - bugungi eng muhim xabarlar\n\n"
+            "📰 Yangiliklar - bugungi eng muhim xabarlar\n"
+            "🔙 Asosiy menyu - bosh sahifaga qaytish\n\n"
             "Nima qilishni xohlaysiz?",
             reply_markup=markup
         )
@@ -2989,10 +2990,6 @@ Mijoz admindan javob kutmoqda.
             
         elif message.text == "📰 Yangiliklar":
             show_news_categories(message)
-            
-        elif message.text == "❌ Hech narsa":
-            clear_user_state(message.chat.id)
-            show_employee_panel(message)
             
         elif message.text == "🔙 Asosiy menyu":
             clear_user_state(message.chat.id)
@@ -3919,6 +3916,7 @@ Masalan: "Action" yoki "Comedy"
             
             # Check if search matches popular artists
             found_songs = []
+            artist_name = ""
             search_lower = search_query.lower()
             
             for artist, songs in popular_songs.items():
