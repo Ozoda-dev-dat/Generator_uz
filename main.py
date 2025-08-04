@@ -1004,8 +1004,13 @@ Vazifani boshlash uchun "👤 Xodim" tugmasini bosing va vazifalar ro'yxatini ko
                 with open('config.py', 'w', encoding='utf-8') as f:
                     f.write(new_config)
                 
-                # Update runtime EMPLOYEES dictionary
+                # Update runtime EMPLOYEES dictionary and reload config
                 EMPLOYEES[name] = chat_id
+                
+                # Reload the config module to get updated EMPLOYEES
+                import importlib
+                import config
+                importlib.reload(config)
                 
                 bot.send_message(
                     message.chat.id,
@@ -1140,9 +1145,14 @@ Vazifani boshlash uchun "👤 Xodim" tugmasini bosing va vazifalar ro'yxatini ko
     @bot.message_handler(func=lambda message: message.text == "👤 Xodim")
     def employee_login(message):
         """Employee panel access"""
-        # Check if user is in employee list
+        # Reload config to get latest employee list
+        import importlib
+        import config
+        importlib.reload(config)
+        
+        # Check if user is in employee list from updated config
         employee_name = None
-        for name, chat_id in EMPLOYEES.items():
+        for name, chat_id in config.EMPLOYEES.items():
             if chat_id == message.chat.id:
                 employee_name = name
                 break
@@ -1151,7 +1161,7 @@ Vazifani boshlash uchun "👤 Xodim" tugmasini bosing va vazifalar ro'yxatini ko
             bot.send_message(
                 message.chat.id,
                 "❌ Sizning profilingiz topilmadi.\n"
-                "Admin bilan bog'laning."
+                "Admin bilan bog'laning yoki '🎯 Mijoz' bo'limidan foydalaning."
             )
             return
         
@@ -1160,7 +1170,12 @@ Vazifani boshlash uchun "👤 Xodim" tugmasini bosing va vazifalar ro'yxatini ko
     def show_employee_panel(message, employee_name=None):
         """Show employee panel"""
         if not employee_name:
-            for name, chat_id in EMPLOYEES.items():
+            # Reload config to get latest employee list
+            import importlib
+            import config
+            importlib.reload(config)
+            
+            for name, chat_id in config.EMPLOYEES.items():
                 if chat_id == message.chat.id:
                     employee_name = name
                     break

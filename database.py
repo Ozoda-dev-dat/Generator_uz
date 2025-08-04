@@ -18,7 +18,7 @@ def init_database():
             location_lat REAL,
             location_lon REAL,
             location_address TEXT,
-            payment_amount REAL,
+            payment_amount REAL DEFAULT NULL,
             assigned_to TEXT NOT NULL,
             assigned_by INTEGER NOT NULL,
             status TEXT DEFAULT 'pending',
@@ -75,7 +75,7 @@ def init_database():
     conn.close()
 
 def add_task(description: str, location_lat: float, location_lon: float, 
-             location_address: Optional[str], payment_amount: float, 
+             location_address: Optional[str], payment_amount: Optional[float], 
              assigned_to: str, assigned_by: int) -> int:
     """Add a new task and return task ID"""
     conn = sqlite3.connect(DATABASE_PATH)
