@@ -71,6 +71,20 @@ def init_database():
         )
     """)
     
+    # Employee locations table for tracking
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS employee_locations (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            employee_name TEXT NOT NULL,
+            employee_chat_id INTEGER NOT NULL,
+            latitude REAL NOT NULL,
+            longitude REAL NOT NULL,
+            location_type TEXT DEFAULT 'manual',
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            is_live INTEGER DEFAULT 0
+        )
+    """)
+    
     conn.commit()
     conn.close()
 

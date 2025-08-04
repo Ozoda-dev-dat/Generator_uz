@@ -54,7 +54,7 @@ def format_task_info(task: Tuple) -> str:
 {status_emoji} Holat: {status.title()}
 
 📝 Tavsif: {description}
-💰 To'lov: {payment_amount:,.0f} so'm
+💰 To'lov: {f"{payment_amount:,.0f} so'm" if payment_amount else "Belgilanmagan"}
 📅 Yaratilgan: {created_time}
 """
     

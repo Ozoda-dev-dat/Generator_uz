@@ -1124,6 +1124,237 @@ Vazifani boshlash uchun "👤 Xodim" tugmasini bosing va vazifalar ro'yxatini ko
         except Exception as e:
             bot.send_message(message.chat.id, f"❌ Ma'lumotlarni olishda xatolik: {str(e)}")
 
+    # EMPLOYEE TRACKING HANDLERS
+    @bot.message_handler(func=lambda message: message.text == "📍 Xodimlarni kuzatish")
+    def start_employee_tracking(message):
+        """Start employee tracking process"""
+        if message.chat.id != ADMIN_CHAT_ID:
+            return
+        
+        # Reload config to get latest employee list
+        import importlib
+        import config
+        importlib.reload(config)
+        
+        markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
+        for employee_name in config.EMPLOYEES.keys():
+            markup.add(employee_name)
+        markup.add("🌍 Barchani kuzatish", "📊 Kuzatuv tarixi")
+        markup.add("🔙 Ortga")
+        
+        set_user_state(message.chat.id, "select_employee_track")
+        
+        bot.send_message(
+            message.chat.id,
+            "📍 Xodimlarni kuzatish tizimi\n\n"
+            "👤 Xodim tanlash - aynan bir xodimni kuzatish\n"
+            "🌍 Barchani kuzatish - barcha xodimlardan lokatsiya so'rash\n"
+            "📊 Kuzatuv tarixi - oxirgi lokatsiyalarni ko'rish\n\n"
+            "⚠️ Xodimlar bu so'rovdan habardor bo'lmaydi",
+            reply_markup=markup
+        )
+
+    @bot.message_handler(func=lambda message: get_user_state(message.chat.id)[0] == "select_employee_track")
+    def handle_employee_tracking_selection(message):
+        """Handle employee tracking selection"""
+        if message.text == "🔙 Ortga":
+            clear_user_state(message.chat.id)
+            show_admin_panel(message)
+            return
+        
+        # Reload config to get latest employee list
+        import importlib
+        import config
+        importlib.reload(config)
+        
+        if message.text == "🌍 Barchani kuzatish":
+            # Request location from all employees
+            success_count = 0
+            total_count = len(config.EMPLOYEES)
+            
+            for employee_name, employee_chat_id in config.EMPLOYEES.items():
+                try:
+                    # Send silent location request
+                    markup = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
+                    location_btn = types.KeyboardButton("📍 Joriy joylashuvim", request_location=True)
+                    markup.add(location_btn)
+                    
+                    bot.send_message(
+                        employee_chat_id,
+                        "📍 Vazifa uchun joriy joylashuvingizni yuboring:",
+                        reply_markup=markup
+                    )
+                    success_count += 1
+                except:
+                    pass
+            
+            bot.send_message(
+                message.chat.id,
+                f"📍 Lokatsiya so'rovi yuborildi!\n\n"
+                f"✅ Muvaffaqiyatli: {success_count}/{total_count} xodim\n"
+                f"⏱ Javoblar kutilmoqda..."
+            )
+            
+        elif message.text == "📊 Kuzatuv tarixi":
+            show_location_history(message)
+            
+        elif message.text in config.EMPLOYEES:
+            # Request location from specific employee
+            employee_chat_id = config.EMPLOYEES[message.text]
+            
+            try:
+                markup = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
+                location_btn = types.KeyboardButton("📍 Joriy joylashuvim", request_location=True)
+                markup.add(location_btn)
+                
+                bot.send_message(
+                    employee_chat_id,
+                    "📍 Vazifa uchun joriy joylashuvingizni yuboring:",
+                    reply_markup=markup
+                )
+                
+                bot.send_message(
+                    message.chat.id,
+                    f"📍 {message.text} xodimiga lokatsiya so'rovi yuborildi!\n"
+                    f"⏱ Javob kutilmoqda..."
+                )
+                
+            except Exception as e:
+                bot.send_message(
+                    message.chat.id,
+                    f"❌ {message.text} xodimiga xabar yuborishda xatolik: {str(e)}"
+                )
+        else:
+            bot.send_message(message.chat.id, "❌ Noto'g'ri tanlov. Qaytadan tanlang.")
+            return
+        
+        clear_user_state(message.chat.id)
+        show_admin_panel(message)
+
+    def show_location_history(message):
+        """Show recent employee locations"""
+        try:
+            from database import DATABASE_PATH
+            import sqlite3
+            
+            conn = sqlite3.connect(DATABASE_PATH)
+            cursor = conn.cursor()
+            
+            # Get recent locations (last 24 hours)
+            cursor.execute("""
+                SELECT employee_name, latitude, longitude, created_at, location_type
+                FROM employee_locations 
+                WHERE created_at > datetime('now', '-1 day')
+                ORDER BY created_at DESC
+                LIMIT 20
+            """)
+            
+            locations = cursor.fetchall()
+            conn.close()
+            
+            if not locations:
+                bot.send_message(message.chat.id, "📍 So'nggi 24 soatda lokatsiya ma'lumotlari topilmadi.")
+                return
+            
+            history_text = "📊 So'nggi 24 soat lokatsiya tarixi:\n\n"
+            
+            for i, (emp_name, lat, lon, created_at, loc_type) in enumerate(locations, 1):
+                try:
+                    time_str = datetime.fromisoformat(created_at).strftime("%d.%m %H:%M")
+                except:
+                    time_str = created_at
+                
+                history_text += f"{i}. 👤 {emp_name}\n"
+                history_text += f"   📍 {lat:.6f}, {lon:.6f}\n"
+                history_text += f"   🕐 {time_str}\n\n"
+            
+            # Send Google Maps links for recent locations
+            if locations:
+                latest_locations = {}
+                for emp_name, lat, lon, created_at, loc_type in locations:
+                    if emp_name not in latest_locations:
+                        latest_locations[emp_name] = (lat, lon)
+                
+                history_text += "🗺 Google Maps havolalar:\n"
+                for emp_name, (lat, lon) in latest_locations.items():
+                    maps_url = f"https://maps.google.com/?q={lat},{lon}"
+                    history_text += f"📍 {emp_name}: {maps_url}\n"
+            
+            if len(history_text) > 4000:
+                parts = [history_text[i:i+4000] for i in range(0, len(history_text), 4000)]
+                for part in parts:
+                    bot.send_message(message.chat.id, part)
+            else:
+                bot.send_message(message.chat.id, history_text)
+                
+        except Exception as e:
+            bot.send_message(message.chat.id, f"❌ Xatolik: {str(e)}")
+
+    def handle_location_sharing(message):
+        """Handle location sharing from employees"""
+        # Find employee name
+        employee_name = None
+        
+        # Reload config to get latest employee list  
+        import importlib
+        import config
+        importlib.reload(config)
+        
+        for name, chat_id in config.EMPLOYEES.items():
+            if chat_id == message.chat.id:
+                employee_name = name
+                break
+        
+        if employee_name:
+            # Save location to database
+            try:
+                from database import DATABASE_PATH
+                import sqlite3
+                
+                conn = sqlite3.connect(DATABASE_PATH)
+                cursor = conn.cursor()
+                
+                cursor.execute("""
+                    INSERT INTO employee_locations 
+                    (employee_name, employee_chat_id, latitude, longitude, location_type)
+                    VALUES (?, ?, ?, ?, ?)
+                """, (employee_name, message.chat.id, message.location.latitude, 
+                      message.location.longitude, 'requested'))
+                
+                conn.commit()
+                conn.close()
+                
+                # Confirm to employee
+                bot.send_message(
+                    message.chat.id,
+                    "✅ Lokatsiya qabul qilindi. Rahmat!",
+                    reply_markup=types.ReplyKeyboardRemove()
+                )
+                
+                # Notify admin with location details
+                maps_url = f"https://maps.google.com/?q={message.location.latitude},{message.location.longitude}"
+                
+                bot.send_message(
+                    ADMIN_CHAT_ID,
+                    f"📍 {employee_name} lokatsiyasi keldi!\n\n"
+                    f"🌐 Koordinatalar: {message.location.latitude:.6f}, {message.location.longitude:.6f}\n"
+                    f"🗺 Google Maps: {maps_url}\n"
+                    f"🕐 Vaqt: {datetime.now().strftime('%d.%m.%Y %H:%M')}"
+                )
+                
+                # Send live location to admin  
+                bot.send_location(
+                    ADMIN_CHAT_ID,
+                    message.location.latitude,
+                    message.location.longitude
+                )
+                
+            except Exception as e:
+                bot.send_message(
+                    message.chat.id,
+                    "❌ Lokatsiya saqlashda xatolik yuz berdi."
+                )
+
     @bot.message_handler(func=lambda message: message.text == "🗑 Ma'lumot o'chirish")
     def start_delete_data(message):
         """Start data deletion process"""
