@@ -4490,12 +4490,14 @@ Masalan: "Action" yoki "Comedy"
         # Enhanced polling with better error handling for production
         while True:
             try:
-                bot.infinity_polling(none_stop=True, interval=1, timeout=20)
+                print("🔄 Bot doimiy ishlash rejimida...")
+                bot.infinity_polling(none_stop=True, interval=1, timeout=20, long_polling_timeout=60)
             except Exception as e:
                 print(f"⚠️ Bot ulanishida xatolik: {e}")
-                print("🔄 5 soniyadan keyin qayta urinish...")
+                print("🔄 10 soniyadan keyin avtomatik qayta ulanish...")
                 import time
-                time.sleep(5)
+                time.sleep(10)
+                print("🚀 Bot qayta ishga tushirilmoqda...")
                 continue
         
     except KeyboardInterrupt:
@@ -4503,15 +4505,18 @@ Masalan: "Action" yoki "Comedy"
         sys.exit(0)
     except Exception as e:
         print(f"❌ Jiddiy bot xatosi: {e}")
-        print("🚨 Bot qayta ishga tushirilmoqda...")
+        print("🚨 Bot avtomatik qayta ishga tushirilmoqda...")
         import time
-        time.sleep(10)
-        # Restart the bot automatically
+        time.sleep(15)
+        print("🔄 Qayta ulanish...")
+        # Recursive restart to ensure bot never stops
         try:
-            bot.infinity_polling(none_stop=True, interval=1, timeout=20)
+            main()  # Restart the entire main function
         except Exception as restart_error:
             print(f"❌ Qayta ishga tushirishda xatolik: {restart_error}")
-            sys.exit(1)
+            print("⏳ 30 soniya kutib, yana urinish...")
+            time.sleep(30)
+            main()  # Try again
 
 if __name__ == "__main__":
     main()
