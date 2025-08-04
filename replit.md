@@ -1,6 +1,6 @@
 # Overview
 
-This is an Enhanced Telegram Task Management Bot built in Python that facilitates comprehensive task assignment and tracking between administrators and employees. The bot provides a complete workflow for creating tasks, assigning them to specific employees, tracking completion status with media attachments, and generating detailed reports. It includes advanced features like location sharing, real-time employee tracking, Excel-based reporting, debt management, media file handling (photos, videos, voice), and multi-step task completion workflows. The system is designed for small to medium-sized teams requiring sophisticated work assignment management through Telegram with professional reporting capabilities.
+This is an Enhanced Telegram Task Management Bot built in Python that facilitates comprehensive task assignment and tracking between administrators and employees. The bot provides a complete workflow for creating tasks, assigning them to specific employees, tracking completion status with media attachments, and generating detailed reports. It includes advanced features like location sharing, real-time employee tracking, Excel-based reporting, debt management (including "Boshqalar" category), media file handling (photos, videos, voice), direct employee management, comprehensive data management capabilities, and multi-step task completion workflows. The system is designed for small to medium-sized teams requiring sophisticated work assignment management through Telegram with professional reporting capabilities.
 
 # User Preferences
 
@@ -31,11 +31,13 @@ Preferred communication style: Simple, everyday language.
 - **State Persistence**: Database-backed session management for complex workflows
 
 ## Core Features Architecture
-- **Task Management**: Complete lifecycle tracking (pending → in_progress → completed)
+- **Task Management**: Complete lifecycle tracking (pending → in_progress → completed) with optional payment amounts
 - **Media Integration**: Full support for task completion with photo/video proof and voice reports
 - **Location Services**: GPS location sharing for task assignments and employee tracking
 - **Reporting System**: Professional Excel generation with multi-sheet reports and statistics
-- **Debt Management**: Integrated debt tracking with task completion workflows
+- **Debt Management**: Integrated debt tracking with task completion workflows supporting both employees and "Boshqalar" (Others) category
+- **Employee Management**: Direct employee addition with name and Telegram ID through admin interface
+- **Data Management**: Comprehensive data viewing, insertion, and deletion capabilities
 - **Real-time Notifications**: Admin notification system for task updates and completions
 
 ## File and Data Management
@@ -66,6 +68,34 @@ Preferred communication style: Simple, everyday language.
   - `ADMIN_CHAT_ID` (optional): Admin chat identifier for notifications
 - **Static Configuration**: Employee roster in config.py with chat ID mapping
 - **Runtime Configuration**: Automatic database and directory initialization
+- **Dynamic Employee Management**: Real-time employee addition to config.py with immediate system updates
+
+## Recent Changes (August 2025)
+
+### Enhanced Data Management System
+- **Complete Ma'lumotlar Section**: Full activation with direct data insertion capabilities
+- **Data Overview**: Comprehensive statistics showing tasks, debts, messages, employees, and active sessions
+- **Data Manipulation**: Direct data addition and deletion functionality for all system components
+
+### Extended Debt Management
+- **Boshqalar Category**: Added support for non-employee debts alongside employee debts
+- **Enhanced Debt Creation**: Two-path workflow supporting both staff members and external individuals
+- **Improved Error Handling**: Robust session management with comprehensive error recovery
+
+### Dynamic Employee Management
+- **Direct Employee Addition**: Admin interface for adding employees with name and Telegram ID
+- **Automatic Config Updates**: Real-time updates to config.py with immediate system recognition
+- **Employee Notification**: Automatic welcome messages to newly added employees
+
+### Enhanced Task Payment System
+- **Optional Payment Amounts**: Tasks can have specific payment amounts or remain unset
+- **Clear Payment Status**: Employees receive either payment amount or "payment not set" notification
+- **Flexible Payment Workflow**: Admin choice between setting payment or marking as unspecified
+
+### Technical Improvements
+- **Session Management**: Enhanced admin_data dictionary initialization preventing KeyError exceptions
+- **Error Recovery**: Comprehensive error handling throughout all conversation flows
+- **Data Integrity**: Robust validation and error recovery for all user interactions
 
 ## File System Dependencies
 - **Local Storage**: Persistent SQLite database and organized file structure

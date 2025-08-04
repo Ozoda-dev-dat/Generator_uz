@@ -122,6 +122,10 @@ def main():
     @bot.message_handler(func=lambda message: get_user_state(message.chat.id)[0] == "assign_task_description")
     def get_task_description(message):
         """Get task description"""
+        # Ensure admin_data exists for this user
+        if message.chat.id not in admin_data:
+            admin_data[message.chat.id] = {}
+            
         admin_data[message.chat.id]["description"] = message.text
         set_user_state(message.chat.id, "assign_task_location")
         
@@ -141,6 +145,10 @@ def main():
         state, _ = get_user_state(message.chat.id)
         
         if state == "assign_task_location":
+            # Ensure admin_data exists for this user
+            if message.chat.id not in admin_data:
+                admin_data[message.chat.id] = {}
+                
             admin_data[message.chat.id]["location"] = {
                 "latitude": message.location.latitude,
                 "longitude": message.location.longitude
@@ -179,6 +187,10 @@ def main():
                 reply_markup=markup
             )
         elif message.text == "⏭ To'lov belgilanmagan":
+            # Ensure admin_data exists for this user
+            if message.chat.id not in admin_data:
+                admin_data[message.chat.id] = {}
+                
             admin_data[message.chat.id]["payment"] = None
             proceed_to_employee_selection(message)
         else:
@@ -189,6 +201,11 @@ def main():
         """Get specific payment amount"""
         try:
             payment = float(message.text.replace(" ", "").replace(",", ""))
+            
+            # Ensure admin_data exists for this user
+            if message.chat.id not in admin_data:
+                admin_data[message.chat.id] = {}
+                
             admin_data[message.chat.id]["payment"] = payment
             proceed_to_employee_selection(message)
             
@@ -219,6 +236,10 @@ def main():
             return
         
         if message.text in EMPLOYEES:
+            # Ensure admin_data exists for this user
+            if message.chat.id not in admin_data:
+                admin_data[message.chat.id] = {}
+                
             admin_data[message.chat.id]["employee"] = message.text
             
             # Create task in database
@@ -283,13 +304,18 @@ Vazifani boshlash uchun "👤 Xodim" tugmasini bosing va vazifalar ro'yxatini ko
     @bot.message_handler(func=lambda message: message.text == "📊 Ma'lumotlar")
     def show_data_menu(message):
         """Show data/reports menu"""
-        markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        if message.chat.id != ADMIN_CHAT_ID:
+            return
+            
+        markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
         markup.add("📈 Umumiy hisobot", "📋 Xodimlar hisoboti")
-        markup.add("📥 Excel yuklab olish", "🔙 Ortga")
+        markup.add("📥 Excel yuklab olish", "➕ Ma'lumot qo'shish")
+        markup.add("👁 Barcha ma'lumotlar", "🗑 Ma'lumot o'chirish")
+        markup.add("🔙 Ortga")
         
         bot.send_message(
             message.chat.id,
-            "📊 Ma'lumotlar bo'limi:\n\nKerakli variantni tanlang:",
+            "📊 Ma'lumotlar bo'limi\n\nKerakli variantni tanlang:",
             reply_markup=markup
         )
 
@@ -372,25 +398,20 @@ Vazifani boshlash uchun "👤 Xodim" tugmasini bosing va vazifalar ro'yxatini ko
             bot.send_message(message.chat.id, f"❌ Xatolik: {str(e)}")
 
     @bot.message_handler(func=lambda message: message.text == "➕ Yangi xodim qo'shish")  
-    def add_new_employee_info(message):
-        """Show information about adding new employees"""
+    def start_add_employee(message):
+        """Start adding new employee process"""
         if message.chat.id != ADMIN_CHAT_ID:
             return
-            
-        info_text = """
-ℹ️ **Yangi xodim qo'shish**
-
-Hozirda yangi xodim qo'shish config.py faylida qo'lda amalga oshiriladi.
-
-**Qadamlar:**
-1. Xodimdan Telegram username yoki chat ID olish
-2. config.py faylidagi EMPLOYEES ro'yxatiga qo'shish
-3. Botni qayta ishga tushirish
-
-💡 Yangi xodim qo'shish uchun dasturchi bilan bog'laning.
-"""
         
-        bot.send_message(message.chat.id, info_text, parse_mode='Markdown')
+        set_user_state(message.chat.id, "add_employee_name")
+        admin_data[message.chat.id] = {}
+        
+        markup = types.ReplyKeyboardRemove()
+        bot.send_message(
+            message.chat.id,
+            "👤 Yangi xodimning ismini kiriting:",
+            reply_markup=markup
+        )
     
     @bot.message_handler(func=lambda message: message.text == "👥 Mijozlar so'rovlari")
     def show_customer_requests(message):
@@ -577,6 +598,7 @@ Hozirda yangi xodim qo'shish config.py faylida qo'lda amalga oshiriladi.
         markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
         for employee_name in EMPLOYEES.keys():
             markup.add(employee_name)
+        markup.add("👥 Boshqalar")
         markup.add("🔙 Bekor qilish")
         
         set_user_state(message.chat.id, "select_debt_employee")
@@ -596,7 +618,7 @@ Hozirda yangi xodim qo'shish config.py faylida qo'lda amalga oshiriladi.
             return
         
         if message.text in EMPLOYEES:
-            admin_data[message.chat.id] = {"employee": message.text}
+            admin_data[message.chat.id] = {"employee": message.text, "employee_type": "staff"}
             set_user_state(message.chat.id, "manual_debt_amount")
             
             markup = types.ReplyKeyboardRemove()
@@ -605,14 +627,29 @@ Hozirda yangi xodim qo'shish config.py faylida qo'lda amalga oshiriladi.
                 "💰 Qarz miqdorini kiriting (so'mda):",
                 reply_markup=markup
             )
+        elif message.text == "👥 Boshqalar":
+            admin_data[message.chat.id] = {"employee_type": "other"}
+            set_user_state(message.chat.id, "other_debt_name")
+            
+            markup = types.ReplyKeyboardRemove()
+            bot.send_message(
+                message.chat.id,
+                "👤 Qarzdorning ismini kiriting:",
+                reply_markup=markup
+            )
         else:
-            bot.send_message(message.chat.id, "❌ Iltimos, ro'yxatdan xodim tanlang!")
+            bot.send_message(message.chat.id, "❌ Iltimos, ro'yxatdan variant tanlang!")
 
     @bot.message_handler(func=lambda message: get_user_state(message.chat.id)[0] == "manual_debt_amount")
     def get_manual_debt_amount(message):
         """Get manual debt amount"""
         try:
             amount = float(message.text.replace(" ", "").replace(",", ""))
+            
+            # Ensure admin_data exists for this user
+            if message.chat.id not in admin_data:
+                admin_data[message.chat.id] = {}
+            
             admin_data[message.chat.id]["amount"] = amount
             set_user_state(message.chat.id, "manual_debt_reason")
             
@@ -620,59 +657,95 @@ Hozirda yangi xodim qo'shish config.py faylida qo'lda amalga oshiriladi.
             
         except ValueError:
             bot.send_message(message.chat.id, "❌ Noto'g'ri format. Raqam kiriting:")
+        except KeyError:
+            bot.send_message(message.chat.id, "❌ Sessiya tugagan. Qaytadan boshlang.")
+            clear_user_state(message.chat.id)
+            show_debts_menu(message)
 
     @bot.message_handler(func=lambda message: get_user_state(message.chat.id)[0] == "manual_debt_reason")
     def get_manual_debt_reason(message):
         """Get manual debt reason"""
-        admin_data[message.chat.id]["reason"] = message.text
-        set_user_state(message.chat.id, "manual_debt_date")
-        
-        bot.send_message(
-            message.chat.id,
-            "📅 To'lov sanasini kiriting (masalan: 2025-01-15):"
-        )
+        try:
+            # Ensure admin_data exists for this user
+            if message.chat.id not in admin_data:
+                admin_data[message.chat.id] = {}
+            
+            admin_data[message.chat.id]["reason"] = message.text
+            set_user_state(message.chat.id, "manual_debt_date")
+            
+            bot.send_message(
+                message.chat.id,
+                "📅 To'lov sanasini kiriting (masalan: 2025-01-15):"
+            )
+        except KeyError:
+            bot.send_message(message.chat.id, "❌ Sessiya tugagan. Qaytadan boshlang.")
+            clear_user_state(message.chat.id)
+            show_debts_menu(message)
 
     @bot.message_handler(func=lambda message: get_user_state(message.chat.id)[0] == "manual_debt_date")
     def get_manual_debt_date(message):
         """Get manual debt date and create debt"""
-        data = admin_data[message.chat.id]
-        employee_name = data["employee"]
-        employee_chat_id = EMPLOYEES[employee_name]
-        
-        # Add debt record
-        add_debt(
-            employee_name=employee_name,
-            employee_chat_id=employee_chat_id,
-            task_id=None,
-            amount=data["amount"],
-            reason=data["reason"],
-            payment_date=message.text
-        )
-        
-        bot.send_message(
-            message.chat.id,
-            f"✅ Qarz qo'shildi!\n\n"
-            f"👤 Xodim: {employee_name}\n"
-            f"💰 Miqdor: {data['amount']} so'm\n"
-            f"📝 Sabab: {data['reason']}\n"
-            f"📅 To'lov sanasi: {message.text}"
-        )
-        
-        # Notify employee
         try:
+            # Ensure admin_data exists for this user
+            if message.chat.id not in admin_data:
+                bot.send_message(message.chat.id, "❌ Sessiya tugagan. Qaytadan boshlang.")
+                clear_user_state(message.chat.id)
+                show_debts_menu(message)
+                return
+            
+            data = admin_data[message.chat.id]
+            employee_name = data["employee"]
+        
+            # Handle different employee types
+            if data["employee_type"] == "staff":
+                employee_chat_id = EMPLOYEES[employee_name]
+            else:
+                employee_chat_id = 0  # For non-employees
+        
+            # Add debt record
+            add_debt(
+                employee_name=employee_name,
+                employee_chat_id=employee_chat_id,
+                task_id=None,
+                amount=data["amount"],
+                reason=data["reason"],
+                payment_date=message.text
+            )
+            
             bot.send_message(
-                employee_chat_id,
-                f"⚠️ Sizga yangi qarz qo'shildi:\n\n"
+                message.chat.id,
+                f"✅ Qarz qo'shildi!\n\n"
+                f"👤 Xodim: {employee_name}\n"
                 f"💰 Miqdor: {data['amount']} so'm\n"
                 f"📝 Sabab: {data['reason']}\n"
                 f"📅 To'lov sanasi: {message.text}"
             )
-        except:
-            pass
+            
+            # Notify employee (only if it's a staff member)
+            if data["employee_type"] == "staff":
+                try:
+                    bot.send_message(
+                        employee_chat_id,
+                        f"⚠️ Sizga yangi qarz qo'shildi:\n\n"
+                        f"💰 Miqdor: {data['amount']} so'm\n"
+                        f"📝 Sabab: {data['reason']}\n"
+                        f"📅 To'lov sanasi: {message.text}"
+                    )
+                except:
+                    pass
         
-        clear_user_state(message.chat.id)
-        admin_data.pop(message.chat.id, None)
-        show_debts_menu(message)
+            clear_user_state(message.chat.id)
+            admin_data.pop(message.chat.id, None)
+            show_debts_menu(message)
+        
+        except KeyError as e:
+            bot.send_message(message.chat.id, f"❌ Sessiya xatoligi: {str(e)}")
+            clear_user_state(message.chat.id)
+            show_debts_menu(message)
+        except Exception as e:
+            bot.send_message(message.chat.id, f"❌ Xatolik: {str(e)}")
+            clear_user_state(message.chat.id)
+            show_debts_menu(message)
 
     @bot.message_handler(func=lambda message: message.text == "✅ Qarzni to'lash")
     def start_pay_debt(message):
@@ -886,6 +959,182 @@ Hozirda yangi xodim qo'shish config.py faylida qo'lda amalga oshiriladi.
                 
         except Exception as e:
             bot.send_message(message.chat.id, f"❌ Xatolik: {str(e)}")
+
+    # NEW EMPLOYEE ADDITION HANDLERS
+    @bot.message_handler(func=lambda message: get_user_state(message.chat.id)[0] == "add_employee_name")
+    def get_employee_name(message):
+        """Get new employee name"""
+        admin_data[message.chat.id]["name"] = message.text
+        set_user_state(message.chat.id, "add_employee_id")
+        
+        bot.send_message(
+            message.chat.id,
+            "🆔 Xodimning Telegram ID sini kiriting:"
+        )
+
+    @bot.message_handler(func=lambda message: get_user_state(message.chat.id)[0] == "add_employee_id")
+    def get_employee_id(message):
+        """Get new employee Telegram ID and add to system"""
+        try:
+            chat_id = int(message.text)
+            name = admin_data[message.chat.id]["name"]
+            
+            # Update config file
+            import config
+            
+            # Read current config
+            with open('config.py', 'r', encoding='utf-8') as f:
+                config_content = f.read()
+            
+            # Find EMPLOYEES dictionary and add new employee
+            if "EMPLOYEES = {" in config_content:
+                # Add new employee to the dictionary
+                new_employee_line = f'    "{name}": {chat_id},'
+                
+                # Find the closing brace of EMPLOYEES
+                employees_start = config_content.find("EMPLOYEES = {")
+                employees_end = config_content.find("}", employees_start)
+                
+                # Insert new employee before closing brace
+                new_config = (config_content[:employees_end] + 
+                             new_employee_line + "\n" + 
+                             config_content[employees_end:])
+                
+                # Write updated config
+                with open('config.py', 'w', encoding='utf-8') as f:
+                    f.write(new_config)
+                
+                # Update runtime EMPLOYEES dictionary
+                EMPLOYEES[name] = chat_id
+                
+                bot.send_message(
+                    message.chat.id,
+                    f"✅ Yangi xodim qo'shildi!\n\n"
+                    f"👤 Ism: {name}\n"
+                    f"🆔 Telegram ID: {chat_id}\n\n"
+                    f"⚠️ O'zgarishlar darhol kuchga kiradi."
+                )
+                
+                # Notify new employee
+                try:
+                    bot.send_message(
+                        chat_id,
+                        f"🎉 Salom {name}!\n\n"
+                        f"Siz tizimga xodim sifatida qo'shildingiz.\n"
+                        f"Botdan foydalanish uchun '👤 Xodim' tugmasini bosing."
+                    )
+                except:
+                    bot.send_message(
+                        message.chat.id,
+                        f"⚠️ Xodim qo'shildi, lekin xodimga xabar yuborib bo'lmadi."
+                    )
+            else:
+                bot.send_message(message.chat.id, "❌ Config faylidagi EMPLOYEES bo'limini o'qib bo'lmadi.")
+                
+        except ValueError:
+            bot.send_message(message.chat.id, "❌ Noto'g'ri ID format. Raqam kiriting:")
+            return
+        except Exception as e:
+            bot.send_message(message.chat.id, f"❌ Xatolik: {str(e)}")
+        
+        clear_user_state(message.chat.id)
+        admin_data.pop(message.chat.id, None)
+        show_admin_panel(message)
+
+    # OTHER DEBT HANDLERS
+    @bot.message_handler(func=lambda message: get_user_state(message.chat.id)[0] == "other_debt_name")
+    def get_other_debt_name(message):
+        """Get name for non-employee debt"""
+        admin_data[message.chat.id]["employee"] = message.text
+        set_user_state(message.chat.id, "manual_debt_amount")
+        
+        bot.send_message(
+            message.chat.id,
+            "💰 Qarz miqdorini kiriting (so'mda):"
+        )
+
+    # DATA MANAGEMENT HANDLERS
+    @bot.message_handler(func=lambda message: message.text == "➕ Ma'lumot qo'shish")
+    def start_add_data(message):
+        """Start adding new data process"""
+        if message.chat.id != ADMIN_CHAT_ID:
+            return
+        
+        markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        markup.add("📝 Vazifa qo'shish", "👤 Xodim qo'shish")
+        markup.add("💸 Qarz qo'shish", "💬 Xabar qo'shish")
+        markup.add("🔙 Bekor qilish")
+        
+        bot.send_message(
+            message.chat.id,
+            "➕ Qanday ma'lumot qo'shmoqchisiz?",
+            reply_markup=markup
+        )
+
+    @bot.message_handler(func=lambda message: message.text == "👁 Barcha ma'lumotlar")
+    def show_all_data(message):
+        """Show all data summary"""
+        if message.chat.id != ADMIN_CHAT_ID:
+            return
+        
+        try:
+            from database import DATABASE_PATH
+            import sqlite3
+            
+            conn = sqlite3.connect(DATABASE_PATH)
+            cursor = conn.cursor()
+            
+            # Get tasks count
+            cursor.execute("SELECT COUNT(*) FROM tasks")
+            tasks_count = cursor.fetchone()[0]
+            
+            # Get debts count
+            cursor.execute("SELECT COUNT(*) FROM debts")
+            debts_count = cursor.fetchone()[0]
+            
+            # Get messages count
+            cursor.execute("SELECT COUNT(*) FROM messages")
+            messages_count = cursor.fetchone()[0]
+            
+            # Get user states count
+            cursor.execute("SELECT COUNT(*) FROM user_states")
+            states_count = cursor.fetchone()[0]
+            
+            conn.close()
+            
+            data_summary = f"""
+📊 Barcha ma'lumotlar statistikasi
+
+📝 Vazifalar: {tasks_count}
+💸 Qarzlar: {debts_count}
+💬 Xabarlar: {messages_count}
+👥 Xodimlar: {len(EMPLOYEES)}
+🔄 Faol sessiyalar: {states_count}
+
+🕐 Oxirgi yangilanish: {datetime.now().strftime('%d.%m.%Y %H:%M')}
+"""
+            
+            bot.send_message(message.chat.id, data_summary)
+            
+        except Exception as e:
+            bot.send_message(message.chat.id, f"❌ Ma'lumotlarni olishda xatolik: {str(e)}")
+
+    @bot.message_handler(func=lambda message: message.text == "🗑 Ma'lumot o'chirish")
+    def start_delete_data(message):
+        """Start data deletion process"""
+        if message.chat.id != ADMIN_CHAT_ID:
+            return
+        
+        markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        markup.add("🗑 Vazifani o'chirish", "🗑 Qarzni o'chirish")
+        markup.add("🗑 Xabarni o'chirish", "🗑 Sessiyani o'chirish")
+        markup.add("🔙 Bekor qilish")
+        
+        bot.send_message(
+            message.chat.id,
+            "🗑 Qanday ma'lumotni o'chirmoqchisiz?",
+            reply_markup=markup
+        )
 
     # EMPLOYEE SECTION
     @bot.message_handler(func=lambda message: message.text == "👤 Xodim")
