@@ -17,6 +17,7 @@ EMPLOYEES = {
     "Ozoda": 826129625,
     "Azimjon": 6763936748,
     
+    "Salih": 7792775986,
 }
 
 # File paths

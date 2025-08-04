@@ -5,6 +5,7 @@ This is an Enhanced Telegram Task Management Bot built in Python that facilitate
 # User Preferences
 
 Preferred communication style: Simple, everyday language.
+Task completion flow: Employees should return to main menu (employee panel) after completing tasks, not task list.
 
 # System Architecture
 

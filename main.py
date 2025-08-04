@@ -2560,7 +2560,7 @@ Vazifani boshlash uchun "👤 Xodim" tugmasini bosing va vazifalar ro'yxatini ko
         
         if message.text == "🔙 Bekor qilish":
             clear_user_state(message.chat.id)
-            show_employee_tasks(message)
+            show_employee_panel(message)
             return
         
         if message.text == "💳 Karta orqali olindi":
@@ -2666,7 +2666,7 @@ Rahmat!
             return
         
         clear_user_state(message.chat.id)
-        show_employee_tasks(message)
+        show_employee_panel(message)
 
     @bot.message_handler(func=lambda message: get_user_state(message.chat.id)[0] == "cash_payment_amount")
     def process_cash_payment(message):
@@ -2732,7 +2732,7 @@ Rahmat!
             return
         
         clear_user_state(message.chat.id)  
-        show_employee_tasks(message)
+        show_employee_panel(message)
 
     @bot.message_handler(func=lambda message: get_user_state(message.chat.id)[0] == "debt_person_name")
     def get_debt_person_name(message):
@@ -2863,7 +2863,7 @@ Qarz ma'lumotlari saqlandi. Rahmat!
             return
         
         clear_user_state(message.chat.id)
-        show_employee_tasks(message)
+        show_employee_panel(message)
 
     def send_completion_media(temp_data):
         """Send task completion media to admin"""
