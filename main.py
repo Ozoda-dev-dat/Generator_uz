@@ -1821,6 +1821,457 @@ Vazifani boshlash uchun "👤 Xodim" tugmasini bosing va vazifalar ro'yxatini ko
                 
                 bot.send_message(message.chat.id, task_info, reply_markup=markup)
 
+    @bot.message_handler(func=lambda message: message.text == "📂 Vazifalar tarixi")
+    def show_employee_task_history(message):
+        """Show employee's task history"""
+        employee_name = None
+        for name, chat_id in EMPLOYEES.items():
+            if chat_id == message.chat.id:
+                employee_name = name
+                break
+        
+        if not employee_name:
+            bot.send_message(message.chat.id, "❌ Profil topilmadi.")
+            return
+        
+        try:
+            from database import DATABASE_PATH
+            import sqlite3
+            from datetime import datetime
+            
+            conn = sqlite3.connect(DATABASE_PATH)
+            cursor = conn.cursor()
+            
+            # Get completed tasks for this employee
+            cursor.execute("""
+                SELECT id, title, description, status, created_at, completion_report, 
+                       received_amount, completion_media
+                FROM tasks 
+                WHERE assigned_to = ? AND status = 'completed'
+                ORDER BY created_at DESC 
+                LIMIT 20
+            """, (employee_name,))
+            
+            completed_tasks = cursor.fetchall()
+            conn.close()
+            
+            if not completed_tasks:
+                bot.send_message(message.chat.id, "📭 Sizda bajarilgan vazifalar tarixi yo'q.")
+                return
+            
+            history_text = f"📂 **{employee_name}** - Vazifalar tarixi\n\n"
+            total_earned = 0
+            
+            for i, task in enumerate(completed_tasks, 1):
+                task_id, title, description, status, created_at, completion_report, received_amount, completion_media = task
+                
+                try:
+                    date_str = datetime.fromisoformat(created_at).strftime("%d.%m.%Y %H:%M")
+                except:
+                    date_str = created_at[:16] if created_at else "Noma'lum"
+                
+                amount_text = f"{received_amount:,.0f} so'm" if received_amount else "To'lov belgilanmagan"
+                if received_amount:
+                    total_earned += received_amount
+                
+                history_text += f"{i}. 📋 **{title}**\n"
+                history_text += f"   📅 {date_str}\n"
+                history_text += f"   💰 {amount_text}\n"
+                if completion_report:
+                    report_preview = completion_report[:50] + "..." if len(completion_report) > 50 else completion_report
+                    history_text += f"   📝 {report_preview}\n"
+                history_text += "\n"
+            
+            history_text += f"💰 **Jami ishlab topilgan:** {total_earned:,.0f} so'm\n"
+            history_text += f"📊 **Bajarilgan vazifalar:** {len(completed_tasks)} ta"
+            
+            # Send in chunks if too long
+            if len(history_text) > 4000:
+                parts = [history_text[i:i+4000] for i in range(0, len(history_text), 4000)]
+                for part in parts:
+                    bot.send_message(message.chat.id, part)
+            else:
+                bot.send_message(message.chat.id, history_text)
+                
+        except Exception as e:
+            bot.send_message(message.chat.id, f"❌ Vazifalar tarixi yuklanmadi: {str(e)}")
+
+    @bot.message_handler(func=lambda message: message.text == "📊 Hisobotlar")
+    def show_employee_reports_menu(message):
+        """Show employee reports menu"""
+        employee_name = None
+        for name, chat_id in EMPLOYEES.items():
+            if chat_id == message.chat.id:
+                employee_name = name
+                break
+        
+        if not employee_name:
+            bot.send_message(message.chat.id, "❌ Profil topilmadi.")
+            return
+        
+        markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        markup.add("📅 Haftalik hisobot", "📆 Oylik hisobot")
+        markup.add("📈 Umumiy statistika", "📤 Excel hisobot")
+        markup.add("🔙 Ortga")
+        
+        bot.send_message(
+            message.chat.id,
+            f"📊 **{employee_name}** - Hisobotlar bo'limi\n\n"
+            "Kerakli hisobot turini tanlang:",
+            reply_markup=markup
+        )
+
+    @bot.message_handler(func=lambda message: message.text == "📅 Haftalik hisobot")
+    def show_weekly_report(message):
+        """Show weekly report for employee"""
+        employee_name = None
+        for name, chat_id in EMPLOYEES.items():
+            if chat_id == message.chat.id:
+                employee_name = name
+                break
+        
+        if not employee_name:
+            bot.send_message(message.chat.id, "❌ Profil topilmadi.")
+            return
+        
+        try:
+            from database import DATABASE_PATH
+            import sqlite3
+            from datetime import datetime, timedelta
+            
+            # Calculate date range (last 7 days)
+            end_date = datetime.now()
+            start_date = end_date - timedelta(days=7)
+            
+            conn = sqlite3.connect(DATABASE_PATH)
+            cursor = conn.cursor()
+            
+            # Get completed tasks in last 7 days
+            cursor.execute("""
+                SELECT id, title, created_at, received_amount
+                FROM tasks 
+                WHERE assigned_to = ? AND status = 'completed'
+                AND datetime(created_at) >= datetime(?)
+                ORDER BY created_at DESC
+            """, (employee_name, start_date.isoformat()))
+            
+            weekly_tasks = cursor.fetchall()
+            conn.close()
+            
+            if not weekly_tasks:
+                bot.send_message(
+                    message.chat.id, 
+                    f"📅 **Haftalik hisobot**\n\n"
+                    f"👤 Xodim: {employee_name}\n"
+                    f"📅 Davr: {start_date.strftime('%d.%m')} - {end_date.strftime('%d.%m.%Y')}\n\n"
+                    f"📭 Oxirgi 7 kunda bajarilgan vazifalar yo'q."
+                )
+                return
+            
+            total_earned = sum(task[3] for task in weekly_tasks if task[3])
+            
+            report_text = f"📅 **Haftalik hisobot**\n\n"
+            report_text += f"👤 Xodim: {employee_name}\n"
+            report_text += f"📅 Davr: {start_date.strftime('%d.%m')} - {end_date.strftime('%d.%m.%Y')}\n\n"
+            report_text += f"✅ Bajarilgan vazifalar: {len(weekly_tasks)} ta\n"
+            report_text += f"💰 Jami ishlab topilgan: {total_earned:,.0f} so'm\n\n"
+            
+            if len(weekly_tasks) <= 10:
+                report_text += "📋 **Vazifalar ro'yxati:**\n\n"
+                for i, task in enumerate(weekly_tasks, 1):
+                    task_id, title, created_at, amount = task
+                    try:
+                        date_str = datetime.fromisoformat(created_at).strftime("%d.%m %H:%M")
+                    except:
+                        date_str = created_at[:10] if created_at else "Noma'lum"
+                    
+                    amount_text = f"{amount:,.0f} so'm" if amount else "To'lov yo'q"
+                    report_text += f"{i}. {title}\n"
+                    report_text += f"   📅 {date_str} | 💰 {amount_text}\n\n"
+            
+            bot.send_message(message.chat.id, report_text)
+            
+        except Exception as e:
+            bot.send_message(message.chat.id, f"❌ Haftalik hisobot yuklanmadi: {str(e)}")
+
+    @bot.message_handler(func=lambda message: message.text == "📆 Oylik hisobot")
+    def show_monthly_report(message):
+        """Show monthly report for employee"""
+        employee_name = None
+        for name, chat_id in EMPLOYEES.items():
+            if chat_id == message.chat.id:
+                employee_name = name
+                break
+        
+        if not employee_name:
+            bot.send_message(message.chat.id, "❌ Profil topilmadi.")
+            return
+        
+        try:
+            from database import DATABASE_PATH
+            import sqlite3
+            from datetime import datetime, timedelta
+            
+            # Calculate date range (last 30 days)
+            end_date = datetime.now()
+            start_date = end_date - timedelta(days=30)
+            
+            conn = sqlite3.connect(DATABASE_PATH)
+            cursor = conn.cursor()
+            
+            # Get completed tasks in last 30 days
+            cursor.execute("""
+                SELECT id, title, created_at, received_amount
+                FROM tasks 
+                WHERE assigned_to = ? AND status = 'completed'
+                AND datetime(created_at) >= datetime(?)
+                ORDER BY created_at DESC
+            """, (employee_name, start_date.isoformat()))
+            
+            monthly_tasks = cursor.fetchall()
+            conn.close()
+            
+            if not monthly_tasks:
+                bot.send_message(
+                    message.chat.id, 
+                    f"📆 **Oylik hisobot**\n\n"
+                    f"👤 Xodim: {employee_name}\n"
+                    f"📅 Davr: {start_date.strftime('%d.%m')} - {end_date.strftime('%d.%m.%Y')}\n\n"
+                    f"📭 Oxirgi 30 kunda bajarilgan vazifalar yo'q."
+                )
+                return
+            
+            total_earned = sum(task[3] for task in monthly_tasks if task[3])
+            avg_per_task = total_earned / len(monthly_tasks) if monthly_tasks else 0
+            
+            report_text = f"📆 **Oylik hisobot**\n\n"
+            report_text += f"👤 Xodim: {employee_name}\n"
+            report_text += f"📅 Davr: {start_date.strftime('%d.%m')} - {end_date.strftime('%d.%m.%Y')}\n\n"
+            report_text += f"✅ Bajarilgan vazifalar: {len(monthly_tasks)} ta\n"
+            report_text += f"💰 Jami ishlab topilgan: {total_earned:,.0f} so'm\n"
+            report_text += f"📊 O'rtacha vazifa uchun: {avg_per_task:,.0f} so'm\n\n"
+            
+            # Group by weeks
+            weeks_data = {}
+            for task in monthly_tasks:
+                try:
+                    task_date = datetime.fromisoformat(task[2])
+                    week_start = task_date - timedelta(days=task_date.weekday())
+                    week_key = week_start.strftime("%d.%m")
+                    
+                    if week_key not in weeks_data:
+                        weeks_data[week_key] = {"count": 0, "amount": 0}
+                    
+                    weeks_data[week_key]["count"] += 1
+                    if task[3]:
+                        weeks_data[week_key]["amount"] += task[3]
+                except:
+                    pass
+            
+            if weeks_data:
+                report_text += "📈 **Haftalik taqsimot:**\n\n"
+                for week, data in weeks_data.items():
+                    report_text += f"📅 {week} haftasi: {data['count']} vazifa | {data['amount']:,.0f} so'm\n"
+            
+            bot.send_message(message.chat.id, report_text)
+            
+        except Exception as e:
+            bot.send_message(message.chat.id, f"❌ Oylik hisobot yuklanmadi: {str(e)}")
+
+    @bot.message_handler(func=lambda message: message.text == "📈 Umumiy statistika")
+    def show_employee_statistics(message):
+        """Show overall employee statistics"""
+        employee_name = None
+        for name, chat_id in EMPLOYEES.items():
+            if chat_id == message.chat.id:
+                employee_name = name
+                break
+        
+        if not employee_name:
+            bot.send_message(message.chat.id, "❌ Profil topilmadi.")
+            return
+        
+        try:
+            from database import DATABASE_PATH
+            import sqlite3
+            from datetime import datetime
+            
+            conn = sqlite3.connect(DATABASE_PATH)
+            cursor = conn.cursor()
+            
+            # Get all task statistics
+            cursor.execute("""
+                SELECT status, COUNT(*), COALESCE(SUM(received_amount), 0)
+                FROM tasks 
+                WHERE assigned_to = ?
+                GROUP BY status
+            """, (employee_name,))
+            
+            status_stats = cursor.fetchall()
+            
+            # Get first task date
+            cursor.execute("""
+                SELECT MIN(created_at) FROM tasks WHERE assigned_to = ?
+            """, (employee_name,))
+            
+            first_task_date = cursor.fetchone()[0]
+            conn.close()
+            
+            # Calculate statistics
+            stats = {
+                'pending': {'count': 0, 'amount': 0},
+                'in_progress': {'count': 0, 'amount': 0},
+                'completed': {'count': 0, 'amount': 0}
+            }
+            
+            total_tasks = 0
+            total_earned = 0
+            
+            for status, count, amount in status_stats:
+                if status in stats:
+                    stats[status] = {'count': count, 'amount': amount}
+                    total_tasks += count
+                    if status == 'completed':
+                        total_earned += amount
+            
+            try:
+                start_date = datetime.fromisoformat(first_task_date).strftime("%d.%m.%Y") if first_task_date else "Noma'lum"
+            except:
+                start_date = "Noma'lum"
+            
+            completion_rate = (stats['completed']['count'] / total_tasks * 100) if total_tasks > 0 else 0
+            
+            stats_text = f"📈 **{employee_name}** - Umumiy statistika\n\n"
+            stats_text += f"📅 Birinchi vazifa: {start_date}\n"
+            stats_text += f"📊 Jami vazifalar: {total_tasks} ta\n"
+            stats_text += f"📈 Bajarish foizi: {completion_rate:.1f}%\n\n"
+            
+            stats_text += f"⏳ Kutilayotgan: {stats['pending']['count']} ta\n"
+            stats_text += f"🔄 Jarayonda: {stats['in_progress']['count']} ta\n"
+            stats_text += f"✅ Bajarilgan: {stats['completed']['count']} ta\n\n"
+            
+            stats_text += f"💰 **Jami ishlab topilgan:** {total_earned:,.0f} so'm\n"
+            
+            if stats['completed']['count'] > 0:
+                avg_per_task = total_earned / stats['completed']['count']
+                stats_text += f"📊 O'rtacha vazifa uchun: {avg_per_task:,.0f} so'm"
+            
+            bot.send_message(message.chat.id, stats_text)
+            
+        except Exception as e:
+            bot.send_message(message.chat.id, f"❌ Statistika yuklanmadi: {str(e)}")
+
+    @bot.message_handler(func=lambda message: message.text == "📤 Excel hisobot")
+    def generate_employee_excel_report(message):
+        """Generate Excel report for employee"""
+        employee_name = None
+        for name, chat_id in EMPLOYEES.items():
+            if chat_id == message.chat.id:
+                employee_name = name
+                break
+        
+        if not employee_name:
+            bot.send_message(message.chat.id, "❌ Profil topilmadi.")
+            return
+        
+        bot.send_message(message.chat.id, "📤 Excel hisobot tayyorlanyapti...")
+        
+        try:
+            from database import DATABASE_PATH
+            import sqlite3
+            from datetime import datetime
+            import os
+            
+            # Get all tasks for employee
+            conn = sqlite3.connect(DATABASE_PATH)
+            cursor = conn.cursor()
+            
+            cursor.execute("""
+                SELECT id, title, description, status, created_at, 
+                       completion_report, received_amount
+                FROM tasks 
+                WHERE assigned_to = ?
+                ORDER BY created_at DESC
+            """, (employee_name,))
+            
+            tasks = cursor.fetchall()
+            conn.close()
+            
+            if not tasks:
+                bot.send_message(message.chat.id, "📭 Hisobot uchun vazifalar topilmadi.")
+                return
+            
+            # Create text report
+            report_text = f"📤 **{employee_name}** - To'liq hisobot\n"
+            report_text += f"📅 Yaratilgan: {datetime.now().strftime('%d.%m.%Y %H:%M')}\n\n"
+            
+            total_tasks = len(tasks)
+            completed_tasks = sum(1 for task in tasks if task[3] == 'completed')
+            total_earned = sum(task[6] for task in tasks if task[6])
+            
+            report_text += f"📊 **UMUMIY STATISTIKA:**\n"
+            report_text += f"🔢 Jami vazifalar: {total_tasks} ta\n"
+            report_text += f"✅ Bajarilgan: {completed_tasks} ta\n"
+            report_text += f"📈 Bajarish foizi: {(completed_tasks/total_tasks*100):.1f}%\n"
+            report_text += f"💰 Jami daromad: {total_earned:,.0f} so'm\n\n"
+            
+            report_text += f"📋 **VAZIFALAR RO'YXATI:**\n\n"
+            
+            for i, task in enumerate(tasks, 1):
+                task_id, title, description, status, created_at, completion_report, received_amount = task
+                
+                try:
+                    created_date = datetime.fromisoformat(created_at).strftime("%d.%m.%Y %H:%M")
+                except:
+                    created_date = created_at[:16] if created_at else "Noma'lum"
+                
+                status_uz = {
+                    'pending': '⏳ Kutilmoqda',
+                    'in_progress': '🔄 Bajarilmoqda', 
+                    'completed': '✅ Tugallangan'
+                }.get(status, status)
+                
+                amount_text = f"{received_amount:,.0f} so'm" if received_amount else "To'lov yo'q"
+                
+                report_text += f"{i}. **{title}**\n"
+                report_text += f"   🆔 ID: {task_id}\n"
+                report_text += f"   📊 Holat: {status_uz}\n"
+                report_text += f"   📅 Sana: {created_date}\n"
+                report_text += f"   💰 To'lov: {amount_text}\n"
+                if description:
+                    desc_preview = description[:100] + "..." if len(description) > 100 else description
+                    report_text += f"   📝 Tavsif: {desc_preview}\n"
+                if completion_report:
+                    report_preview = completion_report[:100] + "..." if len(completion_report) > 100 else completion_report
+                    report_text += f"   📋 Hisobot: {report_preview}\n"
+                report_text += "\n"
+            
+            # Create reports directory
+            os.makedirs("reports", exist_ok=True)
+            
+            # Save to text file
+            filename = f"reports/{employee_name}_hisobot_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
+            with open(filename, 'w', encoding='utf-8') as f:
+                f.write(report_text)
+            
+            filepath = filename
+            
+            if filepath and os.path.exists(filepath):
+                with open(filepath, 'rb') as f:
+                    bot.send_document(
+                        message.chat.id,
+                        f,
+                        caption=f"📤 {employee_name} - Excel hisobot"
+                    )
+                # Clean up file
+                os.remove(filepath)
+                bot.send_message(message.chat.id, "✅ Excel hisobot yuborildi!")
+            else:
+                bot.send_message(message.chat.id, "❌ Excel hisobot yaratishda xatolik yuz berdi.")
+                
+        except Exception as e:
+            bot.send_message(message.chat.id, f"❌ Excel hisobot xatoligi: {str(e)}")
+
     @bot.callback_query_handler(func=lambda call: call.data.startswith("start_task_"))
     def start_task(call):
         """Start a task"""
