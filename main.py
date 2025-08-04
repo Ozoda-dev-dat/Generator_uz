@@ -51,6 +51,7 @@ def main():
         
         markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
         markup.add("🔐 Admin", "👤 Xodim")
+        markup.add("👥 Mijoz")
         
         bot.send_message(
             message.chat.id,
@@ -633,6 +634,127 @@ Hozirda yangi xodim qo'shish config.py faylida qo'lda amalga oshiriladi.
             
         except ValueError:
             bot.send_message(message.chat.id, "❌ Noto'g'ri format. Raqam kiriting (masalan: 50000):")
+
+    # CUSTOMER SECTION
+    @bot.message_handler(func=lambda message: message.text == "👥 Mijoz")
+    def customer_panel(message):
+        """Customer panel access"""
+        markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        markup.add("💬 Admin bilan bog'lanish")
+        markup.add("🔙 Ortga")
+        
+        bot.send_message(
+            message.chat.id,
+            "👥 Mijoz paneli\n\n"
+            "Salom! Admin bilan bog'lanish uchun tugmani bosing:",
+            reply_markup=markup
+        )
+
+    @bot.message_handler(func=lambda message: message.text == "💬 Admin bilan bog'lanish")
+    def start_customer_chat(message):
+        """Start customer chat with admin"""
+        set_user_state(message.chat.id, "customer_chat")
+        
+        markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        markup.add("❌ Suhbatni tugatish")
+        
+        bot.send_message(
+            message.chat.id,
+            "💬 Admin bilan suhbat boshlandi!\n\n"
+            "Xabaringizni yozing. Admin sizga javob beradi.\n"
+            "Suhbatni tugatish uchun '❌ Suhbatni tugatish' tugmasini bosing.",
+            reply_markup=markup
+        )
+        
+        # Notify admin about new customer chat
+        try:
+            customer_name = message.from_user.first_name or "Noma'lum mijoz"
+            customer_username = f"@{message.from_user.username}" if message.from_user.username else "Username yo'q"
+            
+            bot.send_message(
+                ADMIN_CHAT_ID,
+                f"🔔 Yangi mijoz suhbati boshlandi!\n\n"
+                f"👤 Mijoz: {customer_name}\n"
+                f"📱 Username: {customer_username}\n"
+                f"🆔 Chat ID: {message.chat.id}\n\n"
+                f"Javob berish uchun: /reply {message.chat.id} [xabar]"
+            )
+        except:
+            pass
+
+    @bot.message_handler(func=lambda message: get_user_state(message.chat.id)[0] == "customer_chat")
+    def handle_customer_message(message):
+        """Handle customer messages"""
+        if message.text == "❌ Suhbatni tugatish":
+            clear_user_state(message.chat.id)
+            customer_panel(message)
+            return
+        
+        # Forward message to admin
+        try:
+            customer_name = message.from_user.first_name or "Noma'lum mijoz"
+            customer_username = f"@{message.from_user.username}" if message.from_user.username else ""
+            
+            admin_message = f"💬 Mijoz xabari:\n"
+            admin_message += f"👤 {customer_name} {customer_username}\n"
+            admin_message += f"🆔 {message.chat.id}\n\n"
+            admin_message += f"📝 {message.text}\n\n"
+            admin_message += f"Javob: /reply {message.chat.id} [xabar]"
+            
+            bot.send_message(ADMIN_CHAT_ID, admin_message)
+            
+            bot.send_message(
+                message.chat.id,
+                "✅ Xabaringiz adminga yuborildi. Javob kutib turing..."
+            )
+            
+        except Exception as e:
+            bot.send_message(
+                message.chat.id,
+                "❌ Xabar yuborishda xatolik yuz berdi. Qaytadan urinib ko'ring."
+            )
+
+    @bot.message_handler(commands=['reply'])
+    def admin_reply_to_customer(message):
+        """Admin reply to customer"""
+        if message.chat.id != ADMIN_CHAT_ID:
+            return
+        
+        try:
+            # Parse command: /reply chat_id message
+            parts = message.text.split(' ', 2)
+            if len(parts) < 3:
+                bot.send_message(
+                    message.chat.id,
+                    "❌ Noto'g'ri format. Ishlatish: /reply [chat_id] [xabar]"
+                )
+                return
+            
+            customer_chat_id = int(parts[1])
+            reply_message = parts[2]
+            
+            # Send reply to customer
+            bot.send_message(
+                customer_chat_id,
+                f"👑 Admin javobi:\n\n{reply_message}"
+            )
+            
+            # Confirm to admin
+            bot.send_message(
+                message.chat.id,
+                f"✅ Javob yuborildi (Chat ID: {customer_chat_id})"
+            )
+            
+        except ValueError:
+            bot.send_message(
+                message.chat.id,
+                "❌ Noto'g'ri chat ID. Raqam kiriting."
+            )
+        except Exception as e:
+            bot.send_message(
+                message.chat.id,
+                f"❌ Xatolik: {str(e)}"
+            )
 
     # Handle location sharing for tracking
     def handle_location_sharing(message):
