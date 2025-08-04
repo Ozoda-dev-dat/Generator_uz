@@ -1765,8 +1765,8 @@ Vazifani boshlash uchun "👤 Xodim" tugmasini bosing va vazifalar ro'yxatini ko
                 break
         
         if employee_name:
-            # Send them back to main menu
-            send_main_menu(message)
+            # Send them back to employee panel
+            show_employee_panel(message)
         else:
             bot.send_message(message.chat.id, "❌ Tushunmadim. Iltimos, menyudan tanlang yoki /start bosing.")
 
@@ -4229,6 +4229,18 @@ Masalan: "Action" yoki "Comedy"
         """Cancel restaurant location request"""
         clear_user_state(message.chat.id)
         start_motivation_system(message)
+
+    @bot.message_handler(func=lambda message: get_user_state(message.chat.id)[0] == "restaurant_location" and message.content_type == 'text')
+    def handle_restaurant_text_cancel(message):
+        """Handle text messages in restaurant location state"""
+        if message.text == "🔙 Bekor qilish":
+            clear_user_state(message.chat.id)
+            start_motivation_system(message)
+        else:
+            bot.send_message(
+                message.chat.id,
+                "📍 Iltimos, joylashuvingizni yuboring yoki '🔙 Bekor qilish' tugmasini bosing."
+            )
 
     def get_daily_news(message):
         """Get daily world and Uzbekistan news using web scraping"""
