@@ -10,13 +10,13 @@ DATABASE_PATH = "task_management.db"
 
 # Employee configuration
 EMPLOYEES = {
-    "👨‍🔧 Kamol": 7442895800,
-    "👨‍🔧 Fozil": 747368650,
-    "👨‍🔧 Asomiddin": 1894259641,
-    "👨‍🔧 Farruh": 1037206796,
+    "Kamol": 7442895800,
+    "Fozil": 747368650,
+    "Asomiddin": 1894259641,
+    "Farruh": 1037206796,
     "Ozoda": 826129625,
     "Azimjon": 6763936748,
-    "🎱 Dilshod": 7792775986,
+    
 }
 
 # File paths
