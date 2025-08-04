@@ -363,7 +363,7 @@ Hozirda yangi xodim qo'shish config.py faylida qo'lda amalga oshiriladi.
             return
             
         markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
-        markup.add("📋 Faol suhbatlar", "📞 Mijoz qo'ng'iroqlari")
+        markup.add("📋 Faol suhbatlar", "📋 Mijozning So'rovlari")
         markup.add("📊 Mijozlar statistikasi", "🔙 Ortga")
         
         bot.send_message(
@@ -424,9 +424,9 @@ Hozirda yangi xodim qo'shish config.py faylida qo'lda amalga oshiriladi.
         except Exception as e:
             bot.send_message(message.chat.id, f"❌ Xatolik: {str(e)}")
 
-    @bot.message_handler(func=lambda message: message.text == "📞 Mijoz qo'ng'iroqlari")
+    @bot.message_handler(func=lambda message: message.text == "📋 Mijozning So'rovlari")
     def show_customer_calls(message):
-        """Show customer call history"""
+        """Show customer requests history"""
         if message.chat.id != ADMIN_CHAT_ID:
             return
         
@@ -452,10 +452,10 @@ Hozirda yangi xodim qo'shish config.py faylida qo'lda amalga oshiriladi.
             conn.close()
             
             if not recent_messages:
-                bot.send_message(message.chat.id, "📭 So'nggi 24 soatda mijoz xabarlari yo'q.")
+                bot.send_message(message.chat.id, "📭 So'nggi 24 soatda mijoz so'rovlari yo'q.")
                 return
             
-            calls_text = "📞 So'nggi mijoz xabarlari (24 soat):\n\n"
+            calls_text = "📋 So'nggi mijoz so'rovlari (24 soat):\n\n"
             
             for i, (chat_id, message_text, created_at) in enumerate(recent_messages, 1):
                 try:
