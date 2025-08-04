@@ -18,7 +18,7 @@ def init_database():
             location_lat REAL,
             location_lon REAL,
             location_address TEXT,
-            payment_amount REAL NOT NULL,
+            payment_amount REAL,
             assigned_to TEXT NOT NULL,
             assigned_by INTEGER NOT NULL,
             status TEXT DEFAULT 'pending',

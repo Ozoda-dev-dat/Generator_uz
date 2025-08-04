@@ -148,10 +148,14 @@ def main():
             
             set_user_state(message.chat.id, "assign_task_payment")
             
-            markup = types.ReplyKeyboardRemove()
+            markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
+            markup.add("💰 To'lov miqdorini kiriting")
+            markup.add("⏭ To'lov belgilanmagan")
+            markup.add("🔙 Bekor qilish")
+            
             bot.send_message(
                 message.chat.id,
-                "✅ Lokatsiya qabul qilindi.\n\n💰 To'lov miqdorini kiriting (so'mda):",
+                "✅ Lokatsiya qabul qilindi.\n\n💰 Vazifa uchun to'lov miqdorini kiriting yoki 'To'lov belgilanmagan' tugmasini bosing:",
                 reply_markup=markup
             )
         else:
@@ -160,26 +164,51 @@ def main():
 
     @bot.message_handler(func=lambda message: get_user_state(message.chat.id)[0] == "assign_task_payment")
     def get_task_payment(message):
-        """Get task payment amount"""
+        """Handle task payment selection"""
+        if message.text == "🔙 Bekor qilish":
+            clear_user_state(message.chat.id)
+            show_admin_panel(message)
+            return
+        
+        if message.text == "💰 To'lov miqdorini kiriting":
+            set_user_state(message.chat.id, "assign_task_payment_amount")
+            markup = types.ReplyKeyboardRemove()
+            bot.send_message(
+                message.chat.id,
+                "💰 To'lov miqdorini kiriting (so'mda):",
+                reply_markup=markup
+            )
+        elif message.text == "⏭ To'lov belgilanmagan":
+            admin_data[message.chat.id]["payment"] = None
+            proceed_to_employee_selection(message)
+        else:
+            bot.send_message(message.chat.id, "❌ Iltimos, tugmalardan birini tanlang!")
+
+    @bot.message_handler(func=lambda message: get_user_state(message.chat.id)[0] == "assign_task_payment_amount")
+    def get_task_payment_amount(message):
+        """Get specific payment amount"""
         try:
             payment = float(message.text.replace(" ", "").replace(",", ""))
             admin_data[message.chat.id]["payment"] = payment
-            
-            set_user_state(message.chat.id, "assign_task_employee")
-            
-            markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
-            for employee_name in EMPLOYEES.keys():
-                markup.add(employee_name)
-            markup.add("🔙 Bekor qilish")
-            
-            bot.send_message(
-                message.chat.id,
-                "👥 Vazifani bajaradigan xodimni tanlang:",
-                reply_markup=markup
-            )
+            proceed_to_employee_selection(message)
             
         except ValueError:
             bot.send_message(message.chat.id, "❌ Noto'g'ri format. Raqam kiriting (masalan: 50000):")
+
+    def proceed_to_employee_selection(message):
+        """Proceed to employee selection step"""
+        set_user_state(message.chat.id, "assign_task_employee")
+        
+        markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
+        for employee_name in EMPLOYEES.keys():
+            markup.add(employee_name)
+        markup.add("🔙 Bekor qilish")
+        
+        bot.send_message(
+            message.chat.id,
+            "👥 Vazifani bajaradigan xodimni tanlang:",
+            reply_markup=markup
+        )
 
     @bot.message_handler(func=lambda message: get_user_state(message.chat.id)[0] == "assign_task_employee")
     def select_task_employee(message):
@@ -206,11 +235,18 @@ def main():
             
             # Send task to employee
             employee_chat_id = EMPLOYEES[data["employee"]]
+            
+            # Format payment info
+            if data["payment"] is not None:
+                payment_text = f"💰 To'lov: {data['payment']} so'm"
+            else:
+                payment_text = "💰 To'lov: Belgilanmagan"
+            
             task_text = f"""
 🔔 Sizga yangi vazifa tayinlandi!
 
 📝 Vazifa: {data['description']}
-💰 To'lov: {data['payment']} so'm
+{payment_text}
 📅 Vaqt: {datetime.now().strftime('%d.%m.%Y %H:%M')}
 
 Vazifani boshlash uchun "👤 Xodim" tugmasini bosing va vazifalar ro'yxatini ko'ring.
