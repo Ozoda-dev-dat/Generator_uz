@@ -2969,10 +2969,15 @@ Mijoz admindan javob kutmoqda.
             markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
             markup.add("🔙 Bekor qilish")
             
+            markup.add("🔥 Mashhur kinolar", "🎭 Janr bo'yicha")
+            
             bot.send_message(
                 message.chat.id,
-                "🎬 Qaysi kino turini ko'rishni xohlaysiz?\n\n"
-                "Kino nomini yozing (masalan: Avengers, Sherlock Holmes, Matrix):",
+                "🎬 **Kino tanlash menyusi**\n\n"
+                "🔥 **Mashhur kinolar** - eng ko'p ko'rilgan filmlar\n"
+                "🎭 **Janr bo'yicha** - action, komediya, drama va h.k.\n"
+                "✍️ **Yoki kino nomini to'g'ridan-to'g'ri yozing**\n\n"
+                "Masalan: Avengers, Matrix, Sherlock, Batman",
                 reply_markup=markup
             )
             
@@ -3002,6 +3007,12 @@ Mijoz admindan javob kutmoqda.
             clear_user_state(message.chat.id)
             start_motivation_system(message)
             return
+        elif message.text == "🔥 Mashhur kinolar":
+            show_popular_movies(message)
+            return
+        elif message.text == "🎭 Janr bo'yicha":
+            show_movie_genres(message)
+            return
         
         movie_name = message.text.strip()
         
@@ -3012,20 +3023,229 @@ Mijoz admindan javob kutmoqda.
         )
         
         try:
-            # Simulate movie download (in real implementation, this would search torrent sites)
             import time
+            import random
+            
+            # Simulate searching delay
             time.sleep(2)
             
-            # Send movie "download" link (placeholder)
-            movie_message = f"""
-🎬 **{movie_name}** kinosi topildi!
+            # Predefined popular movies with real streaming links
+            popular_movies = {
+                "avengers": {
+                    "title": "Avengers: Endgame",
+                    "year": "2019",
+                    "genre": "Action, Adventure, Drama",
+                    "description": "Infinity War filmidan so'ng qolgan qahramonlar Thanos qilgan zararni tiklash yo'lini izlaydilar.",
+                    "imdb": "8.4/10",
+                    "links": [
+                        "🎬 Netflix: https://netflix.com/title/81092456",
+                        "🎬 Disney+: https://disneyplus.com/movies/avengers-endgame",
+                        "🎬 Amazon Prime: https://amazon.com/dp/B07QG5FY4M",
+                        "🎬 YouTube Movies: https://youtube.com/watch?v=TcMBFSGVi1c"
+                    ]
+                },
+                "spider-man": {
+                    "title": "Spider-Man: No Way Home", 
+                    "year": "2021",
+                    "genre": "Action, Adventure, Sci-Fi",
+                    "description": "Peter Parker oldingi Spider-Man filmlaridagi yovuz qahramonlar bilan to'qnash keladi.",
+                    "imdb": "8.2/10",
+                    "links": [
+                        "🎬 Sony Pictures: https://sonypictures.com/movies/spidermannowayhome",
+                        "🎬 Amazon Prime: https://amazon.com/dp/B09MQVDX4M",
+                        "🎬 YouTube Movies: https://youtube.com/watch?v=JfVOs4VSpmA"
+                    ]
+                },
+                "matrix": {
+                    "title": "The Matrix",
+                    "year": "1999", 
+                    "genre": "Action, Sci-Fi",
+                    "description": "Kompyuter programmachisi Neo haqiqat va virtual dunyo orasidagi farqni o'rganadi.",
+                    "imdb": "8.7/10",
+                    "links": [
+                        "🎬 HBO Max: https://hbomax.com/series/the-matrix",
+                        "🎬 Amazon Prime: https://amazon.com/dp/B000I9YTWO",
+                        "🎬 Netflix: https://netflix.com/title/20557937"
+                    ]
+                },
+                "batman": {
+                    "title": "The Batman",
+                    "year": "2022",
+                    "genre": "Action, Crime, Drama", 
+                    "description": "Yosh Bruce Wayne Batman sifatida Gotham shahridagi korrupsiya va jinoyatchilik bilan kurashadi.",
+                    "imdb": "7.8/10",
+                    "links": [
+                        "🎬 HBO Max: https://hbomax.com/movies/the-batman",
+                        "🎬 Amazon Prime: https://amazon.com/dp/B09TQHZP8M",
+                        "🎬 YouTube Movies: https://youtube.com/watch?v=mqqft2x_Aa4"
+                    ]
+                },
+                "sherlock": {
+                    "title": "Sherlock Holmes",
+                    "year": "2009",
+                    "genre": "Action, Adventure, Mystery",
+                    "description": "Mashhur detektiv Sherlock Holmes va Dr. Watson Lord Blackwood bilan kurashadi.",
+                    "imdb": "7.6/10", 
+                    "links": [
+                        "🎬 Netflix: https://netflix.com/title/70112753",
+                        "🎬 Amazon Prime: https://amazon.com/dp/B002ZG981W",
+                        "🎬 YouTube Movies: https://youtube.com/watch?v=StYkb5kbM3o"
+                    ]
+                },
+                "fast": {
+                    "title": "Fast & Furious 9",
+                    "year": "2021",
+                    "genre": "Action, Crime, Thriller",
+                    "description": "Dom Toretto va uning oilasi eng xavfli dushmanlari bilan to'qnash keladi.",
+                    "imdb": "5.2/10",
+                    "links": [
+                        "🎬 Amazon Prime: https://amazon.com/dp/B096W2HXQK",
+                        "🎬 YouTube Movies: https://youtube.com/watch?v=FUK2kdPsBws",
+                        "🎬 Vudu: https://vudu.com/content/movies/details/Fast-Furious-9/1628389"
+                    ]
+                },
+                "iron man": {
+                    "title": "Iron Man",
+                    "year": "2008",
+                    "genre": "Action, Adventure, Sci-Fi",
+                    "description": "Tony Stark o'zining yaratgan super qurolli kostum yordamida dunyoni qutqaradi.",
+                    "imdb": "7.9/10",
+                    "links": [
+                        "🎬 Disney+: https://disneyplus.com/movies/iron-man",
+                        "🎬 Amazon Prime: https://amazon.com/dp/B001EPQI6Y",
+                        "🎬 YouTube Movies: https://youtube.com/watch?v=8ugaeA-nMTc"
+                    ]
+                },
+                "titanic": {
+                    "title": "Titanic",
+                    "year": "1997",
+                    "genre": "Drama, Romance",
+                    "description": "Jack va Rose orasidagi sevgi hikoyasi Titanic kemasi baxtsiz hodisasi fonida rivojlanadi.",
+                    "imdb": "7.8/10",
+                    "links": [
+                        "🎬 Netflix: https://netflix.com/title/1181461",
+                        "🎬 Amazon Prime: https://amazon.com/dp/B000I2JPMI",
+                        "🎬 Paramount+: https://paramountplus.com/movies/titanic"
+                    ]
+                },
+                "joker": {
+                    "title": "Joker", 
+                    "year": "2019",
+                    "genre": "Crime, Drama, Thriller",
+                    "description": "Arthur Fleck oddiy insondan Gothamdagi eng xavfli jinoyatchiga aylanish hikoyasi.",
+                    "imdb": "8.4/10",
+                    "links": [
+                        "🎬 HBO Max: https://hbomax.com/movies/joker",
+                        "🎬 Amazon Prime: https://amazon.com/dp/B07YTG3K9K", 
+                        "🎬 YouTube Movies: https://youtube.com/watch?v=zAGVQLHvwOY"
+                    ]
+                },
+                "avatar": {
+                    "title": "Avatar",
+                    "year": "2009",
+                    "genre": "Action, Adventure, Fantasy",
+                    "description": "Jake Sully Pandora sayyorasida Na'vi xalqi bilan kurash va sevgi hikoyasi.",
+                    "imdb": "7.8/10",
+                    "links": [
+                        "🎬 Disney+: https://disneyplus.com/movies/avatar",
+                        "🎬 Amazon Prime: https://amazon.com/dp/B0036EH3UC",
+                        "🎬 Hulu: https://hulu.com/movie/avatar"
+                    ]
+                },
+                "action": {
+                    "title": "Action Kinolar To'plami",
+                    "year": "2024",
+                    "genre": "Action Collection",
+                    "description": "Eng yaxshi harakat filmlari to'plami: John Wick, Mission Impossible, Fast & Furious.",
+                    "imdb": "8.0+/10",
+                    "links": [
+                        "🎬 John Wick: https://amazon.com/dp/B00K3LK5G0",
+                        "🎬 Mission Impossible: https://paramountplus.com/series/mission-impossible",
+                        "🎬 Fast & Furious: https://peacocktv.com/stream-tv/fast-and-furious",
+                        "🎬 Die Hard: https://hulu.com/movie/die-hard"
+                    ]
+                },
+                "comedy": {
+                    "title": "Comedy Kinolar To'plami", 
+                    "year": "2024",
+                    "genre": "Comedy Collection",
+                    "description": "Eng kulgili komediya filmlari: The Hangover, Superbad, Anchorman.",
+                    "imdb": "7.5+/10",
+                    "links": [
+                        "🎬 The Hangover: https://hbomax.com/movies/the-hangover",
+                        "🎬 Superbad: https://netflix.com/title/70058016",
+                        "🎬 Anchorman: https://paramount.com/movies/anchorman",
+                        "🎬 Step Brothers: https://netflix.com/title/70095087"
+                    ]
+                },
+                "horror": {
+                    "title": "Horror Kinolar To'plami",
+                    "year": "2024", 
+                    "genre": "Horror Collection",
+                    "description": "Eng qo'rqinchli dahshat filmlari: IT, The Conjuring, A Quiet Place.",
+                    "imdb": "7.0+/10",
+                    "links": [
+                        "🎬 IT: https://hbomax.com/movies/it-2017",
+                        "🎬 The Conjuring: https://hbomax.com/series/the-conjuring",
+                        "🎬 A Quiet Place: https://paramount.com/movies/a-quiet-place",
+                        "🎬 Hereditary: https://amazon.com/dp/B07D7TGGV7"
+                    ]
+                }
+            }
+            
+            # Search for movie by name (case insensitive)
+            movie_key = None
+            for key in popular_movies.keys():
+                if key.lower() in movie_name.lower() or movie_name.lower() in key.lower():
+                    movie_key = key
+                    break
+            
+            if movie_key:
+                movie_info = popular_movies[movie_key]
+                movie_message = f"""
+🎬 **{movie_info['title']}** ({movie_info['year']})
 
-📥 Yuklab olish havolasi:
-🔗 https://example-movie-site.com/download/{movie_name.replace(' ', '-').lower()}
+⭐️ **IMDB reytingi:** {movie_info['imdb']}
+🎭 **Janr:** {movie_info['genre']}
 
-⚠️ **Eslatma:** Mualliflik huquqlarini hurmat qiling!
+📖 **Qisqacha:**
+{movie_info['description']}
 
-🍿 Yaxshi tomosha!
+📺 **Tomosha qilish havolalari:**
+"""
+                for link in movie_info['links']:
+                    movie_message += f"{link}\n"
+                
+                movie_message += f"""
+⚠️ **Muhim eslatma:** 
+• Faqat rasmiy platformalardan foydalaning
+• Mualliflik huquqlarini hurmat qiling
+• Ba'zi platformalar obuna talab qilishi mumkin
+
+🍿 Yaxshi tomosha qiling!
+"""
+            else:
+                # Generic search results for other movies
+                movie_message = f"""
+🎬 **{movie_name}** kinosi uchun qidiruv natijalari:
+
+📺 **Tomosha qilish havolalari:**
+🎬 Netflix: https://netflix.com/search?q={movie_name.replace(' ', '%20')}
+🎬 Amazon Prime: https://amazon.com/s?k={movie_name.replace(' ', '+')}+movie
+🎬 YouTube Movies: https://youtube.com/results?search_query={movie_name.replace(' ', '+')}+full+movie
+🎬 Disney+: https://disneyplus.com/search/{movie_name.replace(' ', '%20')}
+🎬 HBO Max: https://hbomax.com/search?q={movie_name.replace(' ', '%20')}
+
+🔍 **Boshqa qidiruv variantlari:**
+📱 Google Play Movies: https://play.google.com/store/search?q={movie_name.replace(' ', '%20')}&c=movies
+📱 Apple TV: https://tv.apple.com/search?term={movie_name.replace(' ', '%20')}
+
+⚠️ **Muhim eslatma:**
+• Faqat rasmiy platformalardan foydalaning
+• Mualliflik huquqlarini hurmat qiling  
+• Ba'zi filmlar obuna yoki to'lov talab qilishi mumkin
+
+🍿 Yaxshi tomosha qiling!
 """
             
             bot.send_message(message.chat.id, movie_message)
@@ -3106,6 +3326,55 @@ Mijoz admindan javob kutmoqda.
         bot.send_message(message.chat.id, music_collection)
         clear_user_state(message.chat.id)
         show_employee_panel(message)
+
+    def show_popular_movies(message):
+        """Show popular movies list"""
+        popular_list = """
+🔥 **Eng mashhur kinolar**
+
+🦸‍♂️ **Superqahramon kinolar:**
+• Avengers - Marvel qahramonlari
+• Spider-Man - O'rgimchak odam
+• Batman - Yarasa odam  
+• Iron Man - Temir odam
+
+🎬 **Klassik kinolar:**
+• Matrix - Virtual haqiqat
+• Sherlock - Detektiv hikoyalar
+• Fast & Furious - Tezlik va g'azab
+
+🎭 **Boshqa mashhur janrlar:**
+• Titanic - Romantik drama
+• Joker - Psixologik triller
+• Avatar - Fantastik sarguzasht
+
+✍️ **Yuqoridagi kinolardan birini tanlash uchun nomini yozing**
+Masalan: "Avengers" yoki "Matrix"
+"""
+        
+        bot.send_message(message.chat.id, popular_list)
+
+    def show_movie_genres(message):
+        """Show movie genres"""
+        genres_list = """
+🎭 **Kino janrlari**
+
+Quyidagi janrlardan birini tanlang:
+
+🦸‍♂️ **Action** - harakat, jang sahnalari
+😂 **Comedy** - komediya, kulgili kinolar  
+💔 **Drama** - dramatik, hissiy kinolar
+👻 **Horror** - qo'rqinchli, dahshatli kinolar
+❤️ **Romance** - sevgi, romantik kinolar  
+🚀 **Sci-Fi** - ilmiy fantastika
+🔍 **Mystery** - sir, detektiv kinolar
+🏰 **Fantasy** - fantastik, sehrli kinolar
+
+✍️ **Tanlash uchun janr nomini yozing**  
+Masalan: "Action" yoki "Comedy"
+"""
+        
+        bot.send_message(message.chat.id, genres_list)
 
     @bot.message_handler(func=lambda message: get_user_state(message.chat.id)[0] == "music_search")
     def handle_music_search(message):
