@@ -274,3 +274,72 @@ def parse_json_data(data_str: str) -> Dict[str, Any]:
         return json.loads(data_str) if data_str else {}
     except:
         return {}
+
+def generate_debts_report_excel() -> Optional[str]:
+    """Generate Excel report for debts"""
+    from database import get_debts
+    from datetime import datetime
+    import openpyxl
+    
+    ensure_directories()
+    
+    # Get all debts
+    debts = get_debts()
+    if not debts:
+        return None
+    
+    # Create workbook
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Qarzlar Hisoboti"
+    
+    # Headers
+    headers = [
+        "ID", "Xodim", "Miqdor (so'm)", "Sabab", "To'lov sanasi", 
+        "Yaratilgan", "Holat"
+    ]
+    ws.append(headers)
+    
+    # Data
+    total_debt = 0
+    paid_debt = 0
+    
+    for debt in debts:
+        debt_id, employee_name, employee_chat_id, task_id, amount, reason, payment_date, created_at, status = debt
+        
+        if status == 'unpaid':
+            total_debt += amount
+        else:
+            paid_debt += amount
+        
+        # Format dates
+        try:
+            created_formatted = datetime.fromisoformat(created_at).strftime("%d.%m.%Y")
+        except:
+            created_formatted = created_at
+        
+        status_text = "To'lanmagan" if status == 'unpaid' else "To'langan"
+        
+        ws.append([
+            debt_id,
+            employee_name,
+            amount,
+            reason,
+            payment_date,
+            created_formatted,
+            status_text
+        ])
+    
+    # Summary
+    ws.append([])
+    ws.append(["JAMI:", "", total_debt + paid_debt, "", "", "", ""])
+    ws.append(["To'lanmagan:", "", total_debt, "", "", "", ""])
+    ws.append(["To'langan:", "", paid_debt, "", "", "", ""])
+    
+    # Save file
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = f"qarzlar_hisoboti_{timestamp}.xlsx"
+    filepath = os.path.join(REPORTS_DIR, filename)
+    
+    wb.save(filepath)
+    return filepath

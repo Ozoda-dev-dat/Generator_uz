@@ -286,7 +286,8 @@ Vazifani boshlash uchun "👤 Xodim" tugmasini bosing va vazifalar ro'yxatini ko
             
         markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
         markup.add("👁 Qarzlarni ko'rish", "➕ Qarz qo'shish")
-        markup.add("❌ Qarzni o'chirish", "🔙 Ortga")
+        markup.add("✅ Qarzni to'lash", "❌ Qarzni o'chirish")
+        markup.add("📊 Qarzlar hisoboti", "🔙 Ortga")
         
         bot.send_message(
             message.chat.id,
@@ -422,6 +423,67 @@ Hozirda yangi xodim qo'shish config.py faylida qo'lda amalga oshiriladi.
             
         except Exception as e:
             bot.send_message(message.chat.id, f"❌ Xatolik: {str(e)}")
+
+    @bot.message_handler(func=lambda message: message.text == "📞 Mijoz qo'ng'iroqlari")
+    def show_customer_calls(message):
+        """Show customer call history"""
+        if message.chat.id != ADMIN_CHAT_ID:
+            return
+        
+        try:
+            from database import DATABASE_PATH
+            import sqlite3
+            
+            conn = sqlite3.connect(DATABASE_PATH)
+            cursor = conn.cursor()
+            
+            # Get recent customer messages (last 24 hours)
+            yesterday = (datetime.now() - timedelta(days=1)).isoformat()
+            
+            cursor.execute("""
+                SELECT from_chat_id, message_text, created_at FROM messages 
+                WHERE to_chat_id = ? AND message_type IN ('customer_message', 'customer_start')
+                AND created_at > ?
+                ORDER BY created_at DESC
+                LIMIT 20
+            """, (ADMIN_CHAT_ID, yesterday))
+            
+            recent_messages = cursor.fetchall()
+            conn.close()
+            
+            if not recent_messages:
+                bot.send_message(message.chat.id, "📭 So'nggi 24 soatda mijoz xabarlari yo'q.")
+                return
+            
+            calls_text = "📞 So'nggi mijoz xabarlari (24 soat):\n\n"
+            
+            for i, (chat_id, message_text, created_at) in enumerate(recent_messages, 1):
+                try:
+                    # Try to get user info
+                    user_info = bot.get_chat(chat_id)
+                    name = user_info.first_name or "Noma'lum"
+                except:
+                    name = "Noma'lum mijoz"
+                
+                try:
+                    time_str = datetime.fromisoformat(created_at).strftime("%d.%m %H:%M")
+                except:
+                    time_str = created_at[:16]
+                
+                calls_text += f"{i}. 👤 {name} ({chat_id})\n"
+                calls_text += f"   🕐 {time_str}\n"
+                calls_text += f"   💬 {message_text[:50]}{'...' if len(message_text) > 50 else ''}\n\n"
+            
+            if len(calls_text) > 4000:
+                # Split long messages
+                parts = [calls_text[i:i+4000] for i in range(0, len(calls_text), 4000)]
+                for part in parts:
+                    bot.send_message(message.chat.id, part)
+            else:
+                bot.send_message(message.chat.id, calls_text)
+                
+        except Exception as e:
+            bot.send_message(message.chat.id, f"❌ Xatolik: {str(e)}")
     
     @bot.message_handler(func=lambda message: message.text == "📊 Mijozlar statistikasi")
     def show_customer_stats(message):
@@ -469,6 +531,325 @@ Hozirda yangi xodim qo'shish config.py faylida qo'lda amalga oshiriladi.
             
         except Exception as e:
             bot.send_message(message.chat.id, f"❌ Statistika olishda xatolik: {str(e)}")
+
+    @bot.message_handler(func=lambda message: message.text == "➕ Qarz qo'shish")
+    def start_manual_debt_add(message):
+        """Start manual debt addition process"""
+        if message.chat.id != ADMIN_CHAT_ID:
+            return
+        
+        markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
+        for employee_name in EMPLOYEES.keys():
+            markup.add(employee_name)
+        markup.add("🔙 Bekor qilish")
+        
+        set_user_state(message.chat.id, "select_debt_employee")
+        
+        bot.send_message(
+            message.chat.id,
+            "👥 Kimga qarz qo'shmoqchisiz?",
+            reply_markup=markup
+        )
+
+    @bot.message_handler(func=lambda message: get_user_state(message.chat.id)[0] == "select_debt_employee")
+    def select_debt_employee(message):
+        """Select employee for debt"""
+        if message.text == "🔙 Bekor qilish":
+            clear_user_state(message.chat.id)
+            show_debts_menu(message)
+            return
+        
+        if message.text in EMPLOYEES:
+            admin_data[message.chat.id] = {"employee": message.text}
+            set_user_state(message.chat.id, "manual_debt_amount")
+            
+            markup = types.ReplyKeyboardRemove()
+            bot.send_message(
+                message.chat.id,
+                "💰 Qarz miqdorini kiriting (so'mda):",
+                reply_markup=markup
+            )
+        else:
+            bot.send_message(message.chat.id, "❌ Iltimos, ro'yxatdan xodim tanlang!")
+
+    @bot.message_handler(func=lambda message: get_user_state(message.chat.id)[0] == "manual_debt_amount")
+    def get_manual_debt_amount(message):
+        """Get manual debt amount"""
+        try:
+            amount = float(message.text.replace(" ", "").replace(",", ""))
+            admin_data[message.chat.id]["amount"] = amount
+            set_user_state(message.chat.id, "manual_debt_reason")
+            
+            bot.send_message(message.chat.id, "📝 Qarz sababini kiriting:")
+            
+        except ValueError:
+            bot.send_message(message.chat.id, "❌ Noto'g'ri format. Raqam kiriting:")
+
+    @bot.message_handler(func=lambda message: get_user_state(message.chat.id)[0] == "manual_debt_reason")
+    def get_manual_debt_reason(message):
+        """Get manual debt reason"""
+        admin_data[message.chat.id]["reason"] = message.text
+        set_user_state(message.chat.id, "manual_debt_date")
+        
+        bot.send_message(
+            message.chat.id,
+            "📅 To'lov sanasini kiriting (masalan: 2025-01-15):"
+        )
+
+    @bot.message_handler(func=lambda message: get_user_state(message.chat.id)[0] == "manual_debt_date")
+    def get_manual_debt_date(message):
+        """Get manual debt date and create debt"""
+        data = admin_data[message.chat.id]
+        employee_name = data["employee"]
+        employee_chat_id = EMPLOYEES[employee_name]
+        
+        # Add debt record
+        add_debt(
+            employee_name=employee_name,
+            employee_chat_id=employee_chat_id,
+            task_id=None,
+            amount=data["amount"],
+            reason=data["reason"],
+            payment_date=message.text
+        )
+        
+        bot.send_message(
+            message.chat.id,
+            f"✅ Qarz qo'shildi!\n\n"
+            f"👤 Xodim: {employee_name}\n"
+            f"💰 Miqdor: {data['amount']} so'm\n"
+            f"📝 Sabab: {data['reason']}\n"
+            f"📅 To'lov sanasi: {message.text}"
+        )
+        
+        # Notify employee
+        try:
+            bot.send_message(
+                employee_chat_id,
+                f"⚠️ Sizga yangi qarz qo'shildi:\n\n"
+                f"💰 Miqdor: {data['amount']} so'm\n"
+                f"📝 Sabab: {data['reason']}\n"
+                f"📅 To'lov sanasi: {message.text}"
+            )
+        except:
+            pass
+        
+        clear_user_state(message.chat.id)
+        admin_data.pop(message.chat.id, None)
+        show_debts_menu(message)
+
+    @bot.message_handler(func=lambda message: message.text == "✅ Qarzni to'lash")
+    def start_pay_debt(message):
+        """Start debt payment process"""
+        if message.chat.id != ADMIN_CHAT_ID:
+            return
+        
+        try:
+            debts = get_debts()
+            
+            if not debts:
+                bot.send_message(message.chat.id, "✅ To'lanadigan qarzlar yo'q!")
+                return
+            
+            markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+            
+            for debt in debts[:10]:  # Show first 10 debts
+                debt_id, employee_name, employee_chat_id, task_id, amount, reason, payment_date, created_at, status = debt
+                markup.add(f"💸 ID:{debt_id} - {employee_name} ({amount} so'm)")
+            
+            markup.add("🔙 Bekor qilish")
+            
+            set_user_state(message.chat.id, "select_debt_to_pay")
+            
+            bot.send_message(
+                message.chat.id,
+                "✅ Qaysi qarzni to'langanini belgilaysiz?",
+                reply_markup=markup
+            )
+            
+        except Exception as e:
+            bot.send_message(message.chat.id, f"❌ Xatolik: {str(e)}")
+
+    @bot.message_handler(func=lambda message: get_user_state(message.chat.id)[0] == "select_debt_to_pay")
+    def pay_selected_debt(message):
+        """Pay selected debt"""
+        if message.text == "🔙 Bekor qilish":
+            clear_user_state(message.chat.id)
+            show_debts_menu(message)
+            return
+        
+        try:
+            # Extract debt ID from message
+            if "ID:" in message.text:
+                debt_id = int(message.text.split("ID:")[1].split(" ")[0])
+                
+                # Update debt status to paid
+                from database import DATABASE_PATH
+                import sqlite3
+                
+                conn = sqlite3.connect(DATABASE_PATH)
+                cursor = conn.cursor()
+                
+                cursor.execute("""
+                    UPDATE debts SET status = 'paid' WHERE id = ?
+                """, (debt_id,))
+                
+                # Get debt info
+                cursor.execute("""
+                    SELECT employee_name, employee_chat_id, amount, reason 
+                    FROM debts WHERE id = ?
+                """, (debt_id,))
+                
+                debt_info = cursor.fetchone()
+                conn.commit()
+                conn.close()
+                
+                if debt_info:
+                    employee_name, employee_chat_id, amount, reason = debt_info
+                    
+                    bot.send_message(
+                        message.chat.id,
+                        f"✅ Qarz to'langanini belgilandi!\n\n"
+                        f"🆔 Qarz ID: {debt_id}\n"
+                        f"👤 Xodim: {employee_name}\n"
+                        f"💰 Miqdor: {amount} so'm\n"
+                        f"📝 Sabab: {reason}"
+                    )
+                    
+                    # Notify employee
+                    try:
+                        bot.send_message(
+                            employee_chat_id,
+                            f"✅ Sizning qarzingiz to'langanini belgilandi:\n\n"
+                            f"💰 Miqdor: {amount} so'm\n"
+                            f"📝 Sabab: {reason}"
+                        )
+                    except:
+                        pass
+                else:
+                    bot.send_message(message.chat.id, "❌ Qarz topilmadi.")
+            else:
+                bot.send_message(message.chat.id, "❌ Noto'g'ri format.")
+                
+        except Exception as e:
+            bot.send_message(message.chat.id, f"❌ Xatolik: {str(e)}")
+        
+        clear_user_state(message.chat.id)
+        show_debts_menu(message)
+
+    @bot.message_handler(func=lambda message: message.text == "❌ Qarzni o'chirish")
+    def start_delete_debt(message):
+        """Start debt deletion process"""
+        if message.chat.id != ADMIN_CHAT_ID:
+            return
+        
+        try:
+            debts = get_debts()
+            
+            if not debts:
+                bot.send_message(message.chat.id, "✅ O'chiriladigan qarzlar yo'q!")
+                return
+            
+            markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+            
+            for debt in debts[:10]:  # Show first 10 debts
+                debt_id, employee_name, employee_chat_id, task_id, amount, reason, payment_date, created_at, status = debt
+                markup.add(f"🗑 ID:{debt_id} - {employee_name} ({amount} so'm)")
+            
+            markup.add("🔙 Bekor qilish")
+            
+            set_user_state(message.chat.id, "select_debt_to_delete")
+            
+            bot.send_message(
+                message.chat.id,
+                "🗑 Qaysi qarzni o'chirmoqchisiz?",
+                reply_markup=markup
+            )
+            
+        except Exception as e:
+            bot.send_message(message.chat.id, f"❌ Xatolik: {str(e)}")
+
+    @bot.message_handler(func=lambda message: get_user_state(message.chat.id)[0] == "select_debt_to_delete")
+    def delete_selected_debt(message):
+        """Delete selected debt"""
+        if message.text == "🔙 Bekor qilish":
+            clear_user_state(message.chat.id)
+            show_debts_menu(message)
+            return
+        
+        try:
+            # Extract debt ID from message
+            if "ID:" in message.text:
+                debt_id = int(message.text.split("ID:")[1].split(" ")[0])
+                
+                # Delete debt
+                from database import DATABASE_PATH
+                import sqlite3
+                
+                conn = sqlite3.connect(DATABASE_PATH)
+                cursor = conn.cursor()
+                
+                # Get debt info before deleting
+                cursor.execute("""
+                    SELECT employee_name, amount, reason 
+                    FROM debts WHERE id = ?
+                """, (debt_id,))
+                
+                debt_info = cursor.fetchone()
+                
+                if debt_info:
+                    cursor.execute("DELETE FROM debts WHERE id = ?", (debt_id,))
+                    conn.commit()
+                    
+                    employee_name, amount, reason = debt_info
+                    
+                    bot.send_message(
+                        message.chat.id,
+                        f"🗑 Qarz o'chirildi!\n\n"
+                        f"🆔 Qarz ID: {debt_id}\n"
+                        f"👤 Xodim: {employee_name}\n"
+                        f"💰 Miqdor: {amount} so'm\n"
+                        f"📝 Sabab: {reason}"
+                    )
+                else:
+                    bot.send_message(message.chat.id, "❌ Qarz topilmadi.")
+                
+                conn.close()
+            else:
+                bot.send_message(message.chat.id, "❌ Noto'g'ri format.")
+                
+        except Exception as e:
+            bot.send_message(message.chat.id, f"❌ Xatolik: {str(e)}")
+        
+        clear_user_state(message.chat.id)
+        show_debts_menu(message)
+
+    @bot.message_handler(func=lambda message: message.text == "📊 Qarzlar hisoboti")
+    def generate_debts_report(message):
+        """Generate debts Excel report"""
+        if message.chat.id != ADMIN_CHAT_ID:
+            return
+        
+        bot.send_message(message.chat.id, "📊 Qarzlar hisoboti tayyorlanmoqda...")
+        
+        try:
+            from utils import generate_debts_report_excel
+            filepath = generate_debts_report_excel()
+            
+            if filepath and os.path.exists(filepath):
+                with open(filepath, 'rb') as f:
+                    bot.send_document(
+                        message.chat.id,
+                        f,
+                        caption="📊 Qarzlar hisoboti (Excel)"
+                    )
+                # Clean up file
+                os.remove(filepath)
+            else:
+                bot.send_message(message.chat.id, "❌ Hisobot yaratishda xatolik yuz berdi.")
+                
+        except Exception as e:
+            bot.send_message(message.chat.id, f"❌ Xatolik: {str(e)}")
 
     # EMPLOYEE SECTION
     @bot.message_handler(func=lambda message: message.text == "👤 Xodim")
