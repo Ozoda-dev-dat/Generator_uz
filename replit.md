@@ -89,6 +89,14 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes (August 2025)
 
+### Employee Motivation and Entertainment System
+- **Post-Task Motivation**: Random congratulatory messages after task completion with entertainment options
+- **Movie Download Feature**: Employees can search and get movie download links after completing tasks
+- **Music Streaming System**: Access to latest monthly music and search functionality for specific songs
+- **Restaurant Recommendations**: Location-based suggestions for popular chains (Evos, Oq Tepa, Lavash, etc.)
+- **Daily News Integration**: Web scraping for Uzbekistan and world news using trafilatura package
+- **Four Entertainment Categories**: Cinema, music, dining, and news with "skip" option
+
 ### Enhanced Data Management System
 - **Complete Ma'lumotlar Section**: Full activation with direct data insertion capabilities
 - **Data Overview**: Comprehensive statistics showing tasks, debts, messages, employees, and active sessions

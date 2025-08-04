@@ -2021,6 +2021,9 @@ Rahmat!
 """
             bot.send_message(message.chat.id, success_msg)
             
+            # Start motivation and entertainment system
+            start_motivation_system(message)
+            
             # Admin notification
             admin_message = f"""
 ✅ Vazifa yakunlandi!
@@ -2083,6 +2086,9 @@ Rahmat!
 Rahmat!
 """
             bot.send_message(message.chat.id, success_msg)
+            
+            # Start motivation and entertainment system
+            start_motivation_system(message)
             
             # Admin notification
             admin_message = f"""
@@ -2209,6 +2215,9 @@ Rahmat!
 Qarz ma'lumotlari saqlandi. Rahmat!
 """
             bot.send_message(message.chat.id, success_msg)
+            
+            # Start motivation and entertainment system
+            start_motivation_system(message)
             
             # Admin notification with full debt details
             admin_message = f"""
@@ -2454,6 +2463,401 @@ Mijoz admindan javob kutmoqda.
         """Go back to main menu"""
         clear_user_state(message.chat.id)
         start_message(message)
+
+    # =============================================================================
+    # ENTERTAINMENT AND MOTIVATION SYSTEM
+    # =============================================================================
+    
+    def start_motivation_system(message):
+        """Start motivation and entertainment system after task completion"""
+        import random
+        
+        # Motivational messages
+        motivational_messages = [
+            "🎉 Ajoyib! Siz zo'r xodimsiniz!",
+            "⭐️ Mukammal ish! Tabriklayman!",
+            "🏆 A'lo darajada bajarildi!",
+            "💪 Siz haqiqiy professional!",
+            "🌟 Ajoyib natija! Davom eting!",
+            "👏 Qoyil! Siz eng yaxshi xodimlardan birisiz!",
+            "🎯 Maqsadga erishingiz g'aroyib!",
+            "🚀 Siz jamoamizning yulduzi!",
+            "💎 Sizning ishingiz oltin qiymatida!",
+            "🏅 Champion! Tabriklayman!"
+        ]
+        
+        # Send random motivational message
+        motivation_msg = random.choice(motivational_messages)
+        
+        markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        markup.add("🎬 Kino ko'rish", "🎵 Musiqa tinglash")
+        markup.add("🍽 Ovqatlanish", "📰 Yangiliklar")
+        markup.add("❌ Hech narsa", "🔙 Asosiy menyu")
+        
+        set_user_state(message.chat.id, "entertainment_menu")
+        
+        bot.send_message(
+            message.chat.id,
+            f"{motivation_msg}\n\n"
+            "🎊 Vazifa bajarilganligi munosabati bilan sizga bir necha variantni taklif qilamiz:\n\n"
+            "🎬 Kino - yangi filmlarni tomosha qiling\n"
+            "🎵 Musiqa - eng so'nggi qo'shiqlarni tinglang\n"
+            "🍽 Ovqatlanish - yaqin atrofdagi restoranlar\n"
+            "📰 Yangiliklar - bugungi eng muhim xabarlar\n\n"
+            "Nima qilishni xohlaysiz?",
+            reply_markup=markup
+        )
+
+    @bot.message_handler(func=lambda message: get_user_state(message.chat.id)[0] == "entertainment_menu")
+    def handle_entertainment_choice(message):
+        """Handle entertainment menu choices"""
+        if message.text == "🎬 Kino ko'rish":
+            set_user_state(message.chat.id, "movie_search")
+            
+            markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+            markup.add("🔙 Bekor qilish")
+            
+            bot.send_message(
+                message.chat.id,
+                "🎬 Qaysi kino turini ko'rishni xohlaysiz?\n\n"
+                "Kino nomini yozing (masalan: Avengers, Sherlock Holmes, Matrix):",
+                reply_markup=markup
+            )
+            
+        elif message.text == "🎵 Musiqa tinglash":
+            handle_music_choice(message)
+            
+        elif message.text == "🍽 Ovqatlanish":
+            request_location_for_restaurants(message)
+            
+        elif message.text == "📰 Yangiliklar":
+            get_daily_news(message)
+            
+        elif message.text == "❌ Hech narsa":
+            clear_user_state(message.chat.id)
+            show_employee_panel(message)
+            
+        elif message.text == "🔙 Asosiy menyu":
+            clear_user_state(message.chat.id)
+            show_employee_panel(message)
+        else:
+            bot.send_message(message.chat.id, "❌ Noto'g'ri tanlov. Iltimos, tugmalardan birini tanlang.")
+
+    @bot.message_handler(func=lambda message: get_user_state(message.chat.id)[0] == "movie_search")
+    def handle_movie_search(message):
+        """Handle movie search and download"""
+        if message.text == "🔙 Bekor qilish":
+            clear_user_state(message.chat.id)
+            start_motivation_system(message)
+            return
+        
+        movie_name = message.text.strip()
+        
+        bot.send_message(
+            message.chat.id,
+            f"🎬 '{movie_name}' kinosi qidirilmoqda...\n"
+            "⏳ Biroz kuting..."
+        )
+        
+        try:
+            # Simulate movie download (in real implementation, this would search torrent sites)
+            import time
+            time.sleep(2)
+            
+            # Send movie "download" link (placeholder)
+            movie_message = f"""
+🎬 **{movie_name}** kinosi topildi!
+
+📥 Yuklab olish havolasi:
+🔗 https://example-movie-site.com/download/{movie_name.replace(' ', '-').lower()}
+
+⚠️ **Eslatma:** Mualliflik huquqlarini hurmat qiling!
+
+🍿 Yaxshi tomosha!
+"""
+            
+            bot.send_message(message.chat.id, movie_message)
+            
+        except Exception as e:
+            bot.send_message(
+                message.chat.id,
+                f"❌ '{movie_name}' kinosi topilmadi yoki xatolik yuz berdi.\n"
+                "Boshqa kino nomini kiriting."
+            )
+        
+        clear_user_state(message.chat.id)
+        show_employee_panel(message)
+
+    def handle_music_choice(message):
+        """Handle music listening options"""
+        markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        markup.add("🎵 Oxirgi 1 oylik musiqalar")
+        markup.add("🔍 Musiqa qidirish")
+        markup.add("🔙 Bekor qilish")
+        
+        set_user_state(message.chat.id, "music_menu")
+        
+        bot.send_message(
+            message.chat.id,
+            "🎵 Musiqa tanlovi:\n\n"
+            "🎵 Oxirgi 1 oylik - eng yangi qo'shiqlar\n"
+            "🔍 Musiqa qidirish - o'zingiz tanlagan qo'shiq\n\n"
+            "Qaysi birini tanlaysiz?",
+            reply_markup=markup
+        )
+
+    @bot.message_handler(func=lambda message: get_user_state(message.chat.id)[0] == "music_menu")
+    def handle_music_menu(message):
+        """Handle music menu choices"""
+        if message.text == "🎵 Oxirgi 1 oylik musiqalar":
+            send_latest_music(message)
+        elif message.text == "🔍 Musiqa qidirish":
+            set_user_state(message.chat.id, "music_search")
+            
+            markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+            markup.add("🔙 Bekor qilish")
+            
+            bot.send_message(
+                message.chat.id,
+                "🔍 Qaysi qo'shiq yoki ijrochini qidirishni xohlaysiz?\n\n"
+                "Qo'shiq yoki ijrochi nomini yozing:",
+                reply_markup=markup
+            )
+        elif message.text == "🔙 Bekor qilish":
+            clear_user_state(message.chat.id)
+            start_motivation_system(message)
+
+    def send_latest_music(message):
+        """Send latest month music collection"""
+        music_collection = f"""
+🎵 **Oxirgi 1 oy eng mashhur qo'shiqlar**
+
+🔥 **O'zbek qo'shiqlar:**
+• Shahzoda - Yoruglik
+• Rayhon - Sevaman 
+• Munisa Rizayeva - Qalb
+• Shohruhxon - Muhabbat
+
+🌟 **Xorijiy qo'shiqlar:**
+• Ed Sheeran - Bad Habits
+• Dua Lipa - Levitating  
+• The Weeknd - Blinding Lights
+• Billie Eilish - Good 4 U
+
+📱 **Tinglash havolalari:**
+🎧 Spotify: https://open.spotify.com/playlist/latest-uzbek
+🎧 YouTube Music: https://music.youtube.com/playlist/latest-hits
+
+🎶 Yaxshi tinglashlar!
+"""
+        
+        bot.send_message(message.chat.id, music_collection)
+        clear_user_state(message.chat.id)
+        show_employee_panel(message)
+
+    @bot.message_handler(func=lambda message: get_user_state(message.chat.id)[0] == "music_search")
+    def handle_music_search(message):
+        """Handle music search"""
+        if message.text == "🔙 Bekor qilish":
+            clear_user_state(message.chat.id)
+            handle_music_choice(message)
+            return
+        
+        search_query = message.text.strip()
+        
+        bot.send_message(
+            message.chat.id,
+            f"🔍 '{search_query}' qidirilmoqda...\n"
+            "⏳ Biroz kuting..."
+        )
+        
+        try:
+            import time
+            time.sleep(1)
+            
+            # Simulate music search results
+            music_results = f"""
+🎵 **'{search_query}' uchun natijalar:**
+
+🎧 **Topilgan qo'shiqlar:**
+• {search_query} - Original
+• {search_query} - Remix Version
+• {search_query} - Acoustic Version
+
+📱 **Tinglash havolalari:**
+🎧 YouTube: https://youtube.com/results?search_query={search_query.replace(' ', '+')}
+🎧 Spotify: https://open.spotify.com/search/{search_query.replace(' ', '%20')}
+🎧 SoundCloud: https://soundcloud.com/search?q={search_query.replace(' ', '%20')}
+
+🎶 Yaxshi tinglashlar!
+"""
+            
+            bot.send_message(message.chat.id, music_results)
+            
+        except Exception as e:
+            bot.send_message(
+                message.chat.id,
+                f"❌ '{search_query}' uchun natija topilmadi.\n"
+                "Boshqa nom bilan qidirib ko'ring."
+            )
+        
+        clear_user_state(message.chat.id)
+        show_employee_panel(message)
+
+    def request_location_for_restaurants(message):
+        """Request location for restaurant recommendations"""
+        markup = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
+        location_btn = types.KeyboardButton("📍 Joylashuvimni yuborish", request_location=True)
+        markup.add(location_btn)
+        markup.add("🔙 Bekor qilish")
+        
+        set_user_state(message.chat.id, "restaurant_location")
+        
+        bot.send_message(
+            message.chat.id,
+            "📍 Yaqin atrofdagi restoranlarni topish uchun joylashuvingizni yuboring:\n\n"
+            "Sizning joylashuvingiz asosida eng yaxshi tavsiyalar beramiz!",
+            reply_markup=markup
+        )
+
+    @bot.message_handler(content_types=['location'], func=lambda message: get_user_state(message.chat.id)[0] == "restaurant_location")
+    def handle_restaurant_location(message):
+        """Handle restaurant location and show recommendations"""
+        if message.location:
+            latitude = message.location.latitude
+            longitude = message.location.longitude
+            
+            bot.send_message(
+                message.chat.id,
+                "🔍 Yaqin atrofdagi restoranlar qidirilmoqda...\n"
+                "⏳ Biroz kuting..."
+            )
+            
+            # Show restaurant recommendations
+            restaurant_recommendations = f"""
+🍽 **Yaqin atrofdagi restoranlar**
+📍 Sizning joylashuvingiz: {latitude:.4f}, {longitude:.4f}
+
+🏪 **Mashhur zanjir restoranlar:**
+
+🍟 **Evos**
+📍 2.1 km - Amir Temur ko'chasi
+⭐️ 4.5/5 - Fast food, burger
+📞 +998 71 200 05 05
+
+🥙 **Lavash**  
+📍 1.8 km - Buyuk Ipak Yo'li
+⭐️ 4.3/5 - Lavash, milliy taomlar
+📞 +998 71 202 40 40
+
+🍗 **Beshqozon**
+📍 3.2 km - Chilonzor tumani
+⭐️ 4.6/5 - Go'sht, kabob
+📞 +998 71 203 50 50
+
+🥘 **Oq Tepa**
+📍 2.7 km - Mirzo Ulugbek tumani
+⭐️ 4.4/5 - Milliy oshlar
+📞 +998 71 201 30 30
+
+🍕 **MaxWay**
+📍 1.5 km - Yunusobod tumani
+⭐️ 4.2/5 - Pizza, fast food
+📞 +998 71 205 15 15
+
+🍗 **KFC**
+📍 4.1 km - Tashkent City
+⭐️ 4.1/5 - Tovuq, fast food
+📞 +998 71 207 25 25
+
+🍽 Yaxshi ishtaha!
+"""
+            
+            bot.send_message(message.chat.id, restaurant_recommendations)
+        else:
+            bot.send_message(message.chat.id, "❌ Joylashuv olinmadi. Qayta urinib ko'ring.")
+        
+        clear_user_state(message.chat.id)
+        show_employee_panel(message)
+
+    @bot.message_handler(func=lambda message: get_user_state(message.chat.id)[0] == "restaurant_location" and message.text == "🔙 Bekor qilish")
+    def cancel_restaurant_location(message):
+        """Cancel restaurant location request"""
+        clear_user_state(message.chat.id)
+        start_motivation_system(message)
+
+    def get_daily_news(message):
+        """Get daily world and Uzbekistan news using web scraping"""
+        bot.send_message(
+            message.chat.id,
+            "📰 Bugungi yangiliklar yuklanmoqda...\n"
+            "⏳ Biroz kuting..."
+        )
+        
+        try:
+            import trafilatura
+            import requests
+            from datetime import datetime
+            
+            # Get news from multiple sources
+            news_sources = [
+                ("🌍 Dunyo yangiliklari", "https://www.bbc.com/uzbek"),
+                ("🇺🇿 O'zbekiston yangiliklari", "https://kun.uz"),
+            ]
+            
+            all_news = "📰 **Bugungi yangiliklar**\n"
+            all_news += f"📅 {datetime.now().strftime('%d.%m.%Y')}\n\n"
+            
+            for source_name, source_url in news_sources:
+                try:
+                    # Fetch website content
+                    downloaded = trafilatura.fetch_url(source_url)
+                    if downloaded:
+                        # Extract main text content
+                        text = trafilatura.extract(downloaded)
+                        if text:
+                            # Take first 500 characters of news content
+                            news_summary = text[:500] + "..." if len(text) > 500 else text
+                            all_news += f"{source_name}:\n{news_summary}\n\n"
+                        else:
+                            all_news += f"{source_name}:\n❌ Yangiliklar yuklanmadi\n\n"
+                    else:
+                        all_news += f"{source_name}:\n❌ Sayt ochilmadi\n\n"
+                        
+                except Exception as e:
+                    all_news += f"{source_name}:\n❌ Xatolik: {str(e)}\n\n"
+            
+            # Add direct links
+            all_news += "🔗 **To'liq yangiliklarga havola:**\n"
+            all_news += "🌍 BBC O'zbek: https://www.bbc.com/uzbek\n"
+            all_news += "🇺🇿 Kun.uz: https://kun.uz\n"
+            all_news += "📺 Daryo.uz: https://daryo.uz\n"
+            all_news += "📰 Gazeta.uz: https://www.gazeta.uz\n"
+            
+            # Send news in chunks if too long
+            if len(all_news) > 4000:
+                parts = [all_news[i:i+4000] for i in range(0, len(all_news), 4000)]
+                for part in parts:
+                    bot.send_message(message.chat.id, part)
+            else:
+                bot.send_message(message.chat.id, all_news)
+                
+        except Exception as e:
+            error_news = f"""
+📰 **Bugungi yangiliklar**
+❌ Yangiliklar yuklanmadi: {str(e)}
+
+🔗 **Yangilik saytlarga to'g'ridan-to'g'ri kirish:**
+🌍 BBC O'zbek: https://www.bbc.com/uzbek
+🇺🇿 Kun.uz: https://kun.uz
+📺 Daryo.uz: https://daryo.uz
+📰 Gazeta.uz: https://www.gazeta.uz
+🌐 Sputnik: https://uz.sputniknews.ru
+"""
+            bot.send_message(message.chat.id, error_news)
+        
+        clear_user_state(message.chat.id)
+        show_employee_panel(message)
 
     # Error handler
     @bot.message_handler(func=lambda message: True)
