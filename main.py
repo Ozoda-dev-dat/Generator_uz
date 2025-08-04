@@ -2464,6 +2464,7 @@ Mijoz admindan javob kutmoqda.
         clear_user_state(message.chat.id)
         start_message(message)
 
+
     # =============================================================================
     # ENTERTAINMENT AND MOTIVATION SYSTEM  
     # =============================================================================
