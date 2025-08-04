@@ -1789,7 +1789,8 @@ Vazifani boshlash uchun "👤 Xodim" tugmasini bosing va vazifalar ro'yxatini ko
         
         markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
         markup.add("📌 Mening vazifalarim", "📂 Vazifalar tarixi")
-        markup.add("📊 Hisobotlar", "🔙 Ortga")
+        markup.add("📊 Hisobotlar", "🎊 Ko'ngilochar")
+        markup.add("🔙 Ortga")
         
         bot.send_message(
             message.chat.id,
@@ -2017,6 +2018,51 @@ Vazifani boshlash uchun "👤 Xodim" tugmasini bosing va vazifalar ro'yxatini ko
         
         clear_user_state(message.chat.id)
         show_employee_panel(message)
+
+    @bot.message_handler(func=lambda message: message.text == "🎊 Ko'ngilochar")
+    def show_entertainment_for_employee(message):
+        """Show entertainment menu for employees"""
+        employee_name = None
+        for name, chat_id in EMPLOYEES.items():
+            if chat_id == message.chat.id:
+                employee_name = name
+                break
+        
+        if not employee_name:
+            bot.send_message(message.chat.id, "❌ Profil topilmadi.")
+            return
+        
+        # Direct access to entertainment without completing a task
+        import random
+        
+        motivational_messages = [
+            "🎉 Salom! Ko'ngilochar bo'limiga xush kelibsiz!",
+            "⭐️ Dam olish vaqti! Nima qilishni xohlaysiz?",
+            "🌟 Ko'ngilochar tanlang va rohatlaning!",
+            "💫 Ajoyib! Qiziqarli kontentga xush kelibsiz!"
+        ]
+        
+        motivation_msg = random.choice(motivational_messages)
+        
+        markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        markup.add("🎬 Kino ko'rish", "🎵 Musiqa tinglash")
+        markup.add("🍽 Ovqatlanish", "📰 Yangiliklar")
+        markup.add("🔙 Asosiy menyu")
+        
+        set_user_state(message.chat.id, "entertainment_menu")
+        
+        bot.send_message(
+            message.chat.id,
+            f"{motivation_msg}\n\n"
+            "🎊 Ko'ngilochar bo'limiga xush kelibsiz!\n\n"
+            "🎬 Kino - yangi filmlarni tomosha qiling\n"
+            "🎵 Musiqa - eng so'nggi qo'shiqlarni tinglang\n"
+            "🍽 Ovqatlanish - yaqin atrofdagi restoranlar\n"
+            "📰 Yangiliklar - bugungi eng muhim xabarlar\n"
+            "🔙 Asosiy menyu - bosh sahifaga qaytish\n\n"
+            "Nima qilishni xohlaysiz?",
+            reply_markup=markup
+        )
 
     @bot.message_handler(func=lambda message: message.text == "📊 Hisobotlar")
     def show_employee_reports_menu(message):
