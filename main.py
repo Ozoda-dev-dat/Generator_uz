@@ -2465,7 +2465,7 @@ Mijoz admindan javob kutmoqda.
         start_message(message)
 
     # =============================================================================
-    # ENTERTAINMENT AND MOTIVATION SYSTEM
+    # ENTERTAINMENT AND MOTIVATION SYSTEM  
     # =============================================================================
     
     def start_motivation_system(message):
