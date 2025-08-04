@@ -1751,6 +1751,25 @@ Vazifani boshlash uchun "👤 Xodim" tugmasini bosing va vazifalar ro'yxatini ko
         
         show_employee_panel(message, employee_name)
 
+    @bot.message_handler(func=lambda message: message.text == "🔙 Ortga" and message.chat.id in EMPLOYEES.values())
+    def employee_back_handler(message):
+        """Handle back button for employees"""
+        # Clear any active state
+        clear_user_state(message.chat.id)
+        
+        # Check if user is an employee 
+        employee_name = None
+        for name, chat_id in EMPLOYEES.items():
+            if chat_id == message.chat.id:
+                employee_name = name
+                break
+        
+        if employee_name:
+            # Send them back to main menu
+            send_main_menu(message)
+        else:
+            bot.send_message(message.chat.id, "❌ Tushunmadim. Iltimos, menyudan tanlang yoki /start bosing.")
+
     def show_employee_panel(message, employee_name=None):
         """Show employee panel"""
         if not employee_name:
