@@ -1921,35 +1921,75 @@ Vazifani boshlash uchun "👤 Xodim" tugmasini bosing va vazifalar ro'yxatini ko
         temp_data["media"] = media_path
         set_user_state(message.chat.id, "complete_task_payment", serialize_json_data(temp_data))
         
-        markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
-        markup.add("❌ To'lov olinmadi (qarzga qo'shish)")
+        markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
+        markup.add("💳 Karta orqali olindi")
+        markup.add("💵 Naqd pul olindi") 
+        markup.add("💸 Qarzga qo'yildi")
+        markup.add("🔙 Bekor qilish")
         
         bot.send_message(
             message.chat.id,
-            "💰 Qancha pul oldingiz? (so'mda kiriting)\n\n"
-            "Agar to'lov olinmagan bo'lsa, pastdagi tugmani bosing:",
+            "💰 To'lov qanday olingan?\n\n"
+            "Kerakli variantni tanlang:",
             reply_markup=markup
         )
 
     @bot.message_handler(func=lambda message: get_user_state(message.chat.id)[0] == "complete_task_payment")
-    def get_completion_payment(message):
-        """Get payment information"""
+    def get_payment_method(message):
+        """Get payment method selection"""
         state, data_str = get_user_state(message.chat.id)
         temp_data = parse_json_data(data_str)
         
-        if message.text == "❌ To'lov olinmadi (qarzga qo'shish)":
-            # Start debt process
-            set_user_state(message.chat.id, "add_debt_amount", serialize_json_data(temp_data))
+        if message.text == "🔙 Bekor qilish":
+            clear_user_state(message.chat.id)
+            show_employee_tasks(message)
+            return
+        
+        if message.text == "💳 Karta orqali olindi":
+            # Card payment process
+            temp_data["payment_method"] = "card"
+            set_user_state(message.chat.id, "card_payment_amount", serialize_json_data(temp_data))
             
             markup = types.ReplyKeyboardRemove()
             bot.send_message(
                 message.chat.id,
-                "💸 Qarz miqdorini kiriting (so'mda):",
+                "💳 Karta orqali qabul qilingan pul miqdorini kiriting (so'mda):",
                 reply_markup=markup
             )
-            return
+            
+        elif message.text == "💵 Naqd pul olindi":
+            # Cash payment process
+            temp_data["payment_method"] = "cash"  
+            set_user_state(message.chat.id, "cash_payment_amount", serialize_json_data(temp_data))
+            
+            markup = types.ReplyKeyboardRemove()
+            bot.send_message(
+                message.chat.id,
+                "💵 Naqd olingan pul miqdorini kiriting (so'mda):",
+                reply_markup=markup
+            )
+            
+        elif message.text == "💸 Qarzga qo'yildi":
+            # Debt process
+            temp_data["payment_method"] = "debt"
+            set_user_state(message.chat.id, "debt_person_name", serialize_json_data(temp_data))
+            
+            markup = types.ReplyKeyboardRemove() 
+            bot.send_message(
+                message.chat.id,
+                "💸 Kimning zimmasi qarzga qo'yildi?\n\n"
+                "Ism va familiyasini kiriting:",
+                reply_markup=markup
+            )
+        else:
+            bot.send_message(message.chat.id, "❌ Iltimos, variantlardan birini tanlang.")
+
+    @bot.message_handler(func=lambda message: get_user_state(message.chat.id)[0] == "card_payment_amount")
+    def process_card_payment(message):
+        """Process card payment completion"""
+        state, data_str = get_user_state(message.chat.id)
+        temp_data = parse_json_data(data_str)
         
-        # Regular payment
         try:
             received_amount = float(message.text.replace(" ", "").replace(",", ""))
             
@@ -1962,53 +2002,255 @@ Vazifani boshlash uchun "👤 Xodim" tugmasini bosing va vazifalar ro'yxatini ko
                 received_amount=received_amount
             )
             
-            # Send completion notification to admin
+            # Get employee name
             employee_name = None
             for name, chat_id in EMPLOYEES.items():
                 if chat_id == message.chat.id:
                     employee_name = name
                     break
             
+            # Success message to employee
+            success_msg = f"""
+✅ Vazifa muvaffaqiyatli yakunlandi!
+
+💳 To'lov usuli: Karta orqali
+💰 Miqdor: {received_amount:,.0f} so'm  
+📝 Status: Karta orqali to'lov qabul qilindi va hisobga tushirildi
+
+Rahmat!
+"""
+            bot.send_message(message.chat.id, success_msg)
+            
+            # Admin notification
             admin_message = f"""
 ✅ Vazifa yakunlandi!
 
 🆔 Vazifa ID: {temp_data["task_id"]}
 👤 Xodim: {employee_name or "Noma'lum"}
-💰 Olingan to'lov: {received_amount} so'm
+💳 To'lov usuli: Karta orqali  
+💰 Olingan to'lov: {received_amount:,.0f} so'm
+📊 Status: Kartaga o'tkazildi, hisobga tushirildi
 
 📝 Hisobot: {temp_data["report"]}
 """
             
             bot.send_message(ADMIN_CHAT_ID, admin_message)
+            send_completion_media(temp_data)
             
-            # Send media if available
-            if temp_data.get("media") and os.path.exists(temp_data["media"]):
-                try:
-                    with open(temp_data["media"], 'rb') as f:
-                        if "photo" in temp_data["media"]:
-                            bot.send_photo(ADMIN_CHAT_ID, f, caption="📸 Vazifa rasmi")
-                        elif "video" in temp_data["media"]:
-                            bot.send_video(ADMIN_CHAT_ID, f, caption="🎥 Vazifa videosi")
-                        elif "voice" in temp_data["media"]:
-                            bot.send_voice(ADMIN_CHAT_ID, f, caption="🎤 Ovozli hisobot")
-                except Exception as e:
-                    print(f"Error sending media to admin: {e}")
+        except ValueError:
+            bot.send_message(message.chat.id, "❌ Iltimos, to'g'ri raqam kiriting!")
+            return
+        except Exception as e:
+            bot.send_message(message.chat.id, f"❌ Xatolik: {str(e)}")
+            return
+        
+        clear_user_state(message.chat.id)
+        show_employee_tasks(message)
+
+    @bot.message_handler(func=lambda message: get_user_state(message.chat.id)[0] == "cash_payment_amount")
+    def process_cash_payment(message):
+        """Process cash payment completion"""
+        state, data_str = get_user_state(message.chat.id)
+        temp_data = parse_json_data(data_str)
+        
+        try:
+            received_amount = float(message.text.replace(" ", "").replace(",", ""))
             
-            clear_user_state(message.chat.id)
+            # Complete the task
+            update_task_status(
+                temp_data["task_id"],
+                "completed", 
+                completion_report=temp_data["report"],
+                completion_media=temp_data.get("media") or "",
+                received_amount=received_amount
+            )
             
-            markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
-            markup.add("📌 Mening vazifalarim", "📂 Vazifalar tarixi")
-            markup.add("🔙 Ortga")
+            # Get employee name
+            employee_name = None
+            for name, chat_id in EMPLOYEES.items():
+                if chat_id == message.chat.id:
+                    employee_name = name
+                    break
+            
+            # Success message to employee
+            success_msg = f"""
+✅ Vazifa muvaffaqiyatli yakunlandi!
+
+💵 To'lov usuli: Naqd pul
+💰 Miqdor: {received_amount:,.0f} so'm
+📝 Status: Naqd pul qabul qilindi
+
+Rahmat!
+"""
+            bot.send_message(message.chat.id, success_msg)
+            
+            # Admin notification
+            admin_message = f"""
+✅ Vazifa yakunlandi!
+
+🆔 Vazifa ID: {temp_data["task_id"]}
+👤 Xodim: {employee_name or "Noma'lum"}
+💵 To'lov usuli: Naqd pul
+💰 Olingan to'lov: {received_amount:,.0f} so'm
+📊 Status: Naqd pul olingan
+
+📝 Hisobot: {temp_data["report"]}
+"""
+            
+            bot.send_message(ADMIN_CHAT_ID, admin_message)
+            send_completion_media(temp_data)
+            
+        except ValueError:
+            bot.send_message(message.chat.id, "❌ Iltimos, to'g'ri raqam kiriting!")
+            return
+        except Exception as e:
+            bot.send_message(message.chat.id, f"❌ Xatolik: {str(e)}")
+            return
+        
+        clear_user_state(message.chat.id)  
+        show_employee_tasks(message)
+
+    @bot.message_handler(func=lambda message: get_user_state(message.chat.id)[0] == "debt_person_name")
+    def get_debt_person_name(message):
+        """Get the name of person who owes money"""
+        state, data_str = get_user_state(message.chat.id)
+        temp_data = parse_json_data(data_str)
+        
+        temp_data["debt_person"] = message.text.strip()
+        set_user_state(message.chat.id, "debt_amount", serialize_json_data(temp_data))
+        
+        bot.send_message(
+            message.chat.id,
+            f"💸 {message.text} zimmasi qancha pul qo'yildi?\n\n"
+            "Miqdorini kiriting (so'mda):"
+        )
+
+    @bot.message_handler(func=lambda message: get_user_state(message.chat.id)[0] == "debt_amount")
+    def get_debt_amount(message):
+        """Get debt amount"""
+        state, data_str = get_user_state(message.chat.id)
+        temp_data = parse_json_data(data_str)
+        
+        try:
+            debt_amount = float(message.text.replace(" ", "").replace(",", ""))
+            temp_data["debt_amount"] = debt_amount
+            set_user_state(message.chat.id, "debt_reason", serialize_json_data(temp_data))
             
             bot.send_message(
                 message.chat.id,
-                "✅ Vazifa muvaffaqiyatli yakunlandi!\n\n"
-                "Admin sizning hisobotingizni oldi.",
-                reply_markup=markup
+                f"📝 {temp_data['debt_person']} zimmasi {debt_amount:,.0f} so'm qarzga qo'yildi.\n\n"
+                "Qarz sababi nima? (masalan: 'Vazifa uchun oldindan to'lov'):"
             )
             
         except ValueError:
-            bot.send_message(message.chat.id, "❌ Noto'g'ri format. Raqam kiriting (masalan: 50000):")
+            bot.send_message(message.chat.id, "❌ Iltimos, to'g'ri raqam kiriting!")
+            return
+
+    @bot.message_handler(func=lambda message: get_user_state(message.chat.id)[0] == "debt_reason")
+    def get_debt_reason(message):
+        """Get debt reason"""
+        state, data_str = get_user_state(message.chat.id)
+        temp_data = parse_json_data(data_str)
+        
+        temp_data["debt_reason"] = message.text.strip()
+        set_user_state(message.chat.id, "debt_payment_date", serialize_json_data(temp_data))
+        
+        bot.send_message(
+            message.chat.id,
+            f"📅 {temp_data['debt_person']} qarzni qachon qaytarishi kerak?\n\n"
+            "To'lov sanasini kiriting (masalan: 01.01.2024):"
+        )
+
+    @bot.message_handler(func=lambda message: get_user_state(message.chat.id)[0] == "debt_payment_date")
+    def complete_debt_process(message):
+        """Complete debt process and finish task"""
+        state, data_str = get_user_state(message.chat.id)
+        temp_data = parse_json_data(data_str)
+        
+        payment_date = message.text.strip()
+        
+        try:
+            # Complete the task with debt
+            update_task_status(
+                temp_data["task_id"],
+                "completed",
+                completion_report=temp_data["report"],
+                completion_media=temp_data.get("media") or "",
+                received_amount=0  # No money received, it's debt
+            )
+            
+            # Add debt record
+            add_debt(
+                employee_name=temp_data["debt_person"],
+                employee_chat_id=0,  # Unknown chat ID for external person
+                task_id=temp_data["task_id"],
+                amount=temp_data["debt_amount"],
+                reason=temp_data["debt_reason"],
+                payment_date=payment_date
+            )
+            
+            # Get employee name
+            employee_name = None
+            for name, chat_id in EMPLOYEES.items():
+                if chat_id == message.chat.id:
+                    employee_name = name
+                    break
+            
+            # Success message to employee
+            success_msg = f"""
+✅ Vazifa muvaffaqiyatli yakunlandi!
+
+💸 To'lov usuli: Qarzga qo'yildi
+👤 Qarzdor: {temp_data["debt_person"]}
+💰 Miqdor: {temp_data["debt_amount"]:,.0f} so'm
+📝 Sabab: {temp_data["debt_reason"]}
+📅 To'lov sanasi: {payment_date}
+
+Qarz ma'lumotlari saqlandi. Rahmat!
+"""
+            bot.send_message(message.chat.id, success_msg)
+            
+            # Admin notification with full debt details
+            admin_message = f"""
+✅ Vazifa yakunlandi!
+
+🆔 Vazifa ID: {temp_data["task_id"]}
+👤 Xodim: {employee_name or "Noma'lum"}
+💸 To'lov usuli: Qarzga qo'yildi
+
+📊 QARZ MA'LUMOTLARI:
+👤 Qarzdor: {temp_data["debt_person"]}
+💰 Miqdor: {temp_data["debt_amount"]:,.0f} so'm
+📝 Sabab: {temp_data["debt_reason"]}
+📅 To'lov sanasi: {payment_date}
+🕐 Yaratilgan: {datetime.now().strftime('%d.%m.%Y %H:%M')}
+
+📝 Vazifa hisoboti: {temp_data["report"]}
+"""
+            
+            bot.send_message(ADMIN_CHAT_ID, admin_message)
+            send_completion_media(temp_data)
+            
+        except Exception as e:
+            bot.send_message(message.chat.id, f"❌ Xatolik: {str(e)}")
+            return
+        
+        clear_user_state(message.chat.id)
+        show_employee_tasks(message)
+
+    def send_completion_media(temp_data):
+        """Send task completion media to admin"""
+        if temp_data.get("media") and os.path.exists(temp_data["media"]):
+            try:
+                with open(temp_data["media"], 'rb') as f:
+                    if "photo" in temp_data["media"]:
+                        bot.send_photo(ADMIN_CHAT_ID, f, caption="📸 Vazifa rasmi")
+                    elif "video" in temp_data["media"]:
+                        bot.send_video(ADMIN_CHAT_ID, f, caption="🎥 Vazifa videosi")
+                    elif "voice" in temp_data["media"]:
+                        bot.send_voice(ADMIN_CHAT_ID, f, caption="🎤 Ovozli hisobot")
+            except Exception as e:
+                print(f"Error sending media to admin: {e}")
 
     # CUSTOMER SECTION
     @bot.message_handler(func=lambda message: message.text == "👥 Mijoz")

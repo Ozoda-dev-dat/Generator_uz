@@ -72,6 +72,16 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes (August 2025)
 
+### Advanced Payment Processing System
+- **Three-Way Payment Method**: Complete overhaul of task completion payment system
+- **Card Payment Flow**: Karta orqali to'lov with confirmation and transfer status notification
+- **Cash Payment Flow**: Naqd pul to'lovi with amount confirmation and receipt acknowledgment
+- **Debt Management Flow**: Multi-step debt creation with debtor name, amount, reason, and payment date
+- **Detailed Admin Notifications**: Payment method-specific admin alerts with full transaction details
+- **Employee Confirmation**: Method-specific success messages with payment status and details
+
+## Recent Changes (August 2025)
+
 ### Enhanced Data Management System
 - **Complete Ma'lumotlar Section**: Full activation with direct data insertion capabilities
 - **Data Overview**: Comprehensive statistics showing tasks, debts, messages, employees, and active sessions
