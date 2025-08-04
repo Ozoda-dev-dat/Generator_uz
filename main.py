@@ -2988,7 +2988,7 @@ Mijoz admindan javob kutmoqda.
             request_location_for_restaurants(message)
             
         elif message.text == "📰 Yangiliklar":
-            get_daily_news(message)
+            show_news_categories(message)
             
         elif message.text == "❌ Hech narsa":
             clear_user_state(message.chat.id)
@@ -3558,6 +3558,285 @@ Masalan: "Pop" yoki "Hip-Hop"
         clear_user_state(message.chat.id)
         show_employee_panel(message)
 
+    def show_news_categories(message):
+        """Show news categories for selection"""
+        markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        markup.add("🌍 Dunyo yangiliklari", "🇺🇿 O'zbekiston yangiliklari")
+        markup.add("📺 Sport yangiliklari", "💼 Iqtisodiyot yangiliklari")
+        markup.add("🎯 Barcha yangiliklar", "🔙 Bekor qilish")
+        
+        set_user_state(message.chat.id, "news_category")
+        
+        bot.send_message(
+            message.chat.id,
+            "📰 **Yangilik kategoriyasini tanlang:**\n\n"
+            "🌍 **Dunyo yangiliklari** - xalqaro voqealar\n"
+            "🇺🇿 **O'zbekiston yangiliklari** - mahalliy yangiliklar\n"
+            "📺 **Sport yangiliklari** - sport sohasidagi yangiliklar\n"
+            "💼 **Iqtisodiyot yangiliklari** - biznes va moliya\n"
+            "🎯 **Barcha yangiliklar** - to'liq qamrovli\n\n"
+            "Qaysi birini tanlaysiz?",
+            reply_markup=markup
+        )
+
+    @bot.message_handler(func=lambda message: get_user_state(message.chat.id)[0] == "news_category")
+    def handle_news_category(message):
+        """Handle news category selection"""
+        if message.text == "🔙 Bekor qilish":
+            clear_user_state(message.chat.id)
+            start_motivation_system(message)
+            return
+        
+        category = message.text.strip()
+        
+        if category == "🌍 Dunyo yangiliklari":
+            get_world_news(message)
+        elif category == "🇺🇿 O'zbekiston yangiliklari":
+            get_uzbekistan_news(message)
+        elif category == "📺 Sport yangiliklari":
+            get_sports_news(message)
+        elif category == "💼 Iqtisodiyot yangiliklari":
+            get_economy_news(message)
+        elif category == "🎯 Barcha yangiliklar":
+            get_daily_news(message)
+        else:
+            bot.send_message(message.chat.id, "❌ Noto'g'ri tanlov. Iltimos, tugmalardan birini tanlang.")
+
+    def get_world_news(message):
+        """Get world news specifically"""
+        bot.send_message(
+            message.chat.id,
+            "🌍 Dunyo yangiliklari yuklanmoqda...\n"
+            "⏳ Biroz kuting..."
+        )
+        
+        try:
+            import trafilatura
+            from datetime import datetime
+            
+            world_sources = [
+                ("🌍 BBC O'zbek", "https://www.bbc.com/uzbek"),
+                ("🌐 VOA O'zbek", "https://www.amerikaovozi.com"),
+            ]
+            
+            all_news = f"🌍 **Dunyo yangiliklari**\n"
+            all_news += f"📅 {datetime.now().strftime('%d.%m.%Y')}\n\n"
+            
+            for source_name, source_url in world_sources:
+                try:
+                    downloaded = trafilatura.fetch_url(source_url)
+                    if downloaded:
+                        text = trafilatura.extract(downloaded)
+                        if text:
+                            news_summary = text[:400] + "..." if len(text) > 400 else text
+                            all_news += f"{source_name}:\n{news_summary}\n\n"
+                        else:
+                            all_news += f"{source_name}:\n❌ Yangilik yuklanmadi\n\n"
+                    else:
+                        all_news += f"{source_name}:\n❌ Sayt ochilmadi\n\n"
+                except Exception as e:
+                    all_news += f"{source_name}:\n❌ Xatolik\n\n"
+            
+            all_news += "🔗 **Manbalar:**\n"
+            all_news += "🌍 BBC: https://www.bbc.com/uzbek\n"
+            all_news += "🌐 VOA: https://www.amerikaovozi.com\n"
+            all_news += "📡 Reuters: https://www.reuters.com\n"
+            
+            bot.send_message(message.chat.id, all_news)
+            
+        except Exception as e:
+            fallback_news = f"""
+🌍 **Dunyo yangiliklari**
+❌ Yangiliklar yuklanmadi
+
+🔗 **To'g'ridan-to'g'ri havola:**
+🌍 BBC O'zbek: https://www.bbc.com/uzbek
+🌐 Amerika Ovozi: https://www.amerikaovozi.com
+📡 Reuters: https://www.reuters.com
+📰 CNN: https://edition.cnn.com
+"""
+            bot.send_message(message.chat.id, fallback_news)
+        
+        clear_user_state(message.chat.id)
+        show_employee_panel(message)
+
+    def get_uzbekistan_news(message):
+        """Get Uzbekistan news specifically"""
+        bot.send_message(
+            message.chat.id,
+            "🇺🇿 O'zbekiston yangiliklari yuklanmoqda...\n"
+            "⏳ Biroz kuting..."
+        )
+        
+        try:
+            import trafilatura
+            from datetime import datetime
+            
+            uzbek_sources = [
+                ("🇺🇿 Kun.uz", "https://kun.uz"),
+                ("📺 Daryo.uz", "https://daryo.uz"),
+            ]
+            
+            all_news = f"🇺🇿 **O'zbekiston yangiliklari**\n"
+            all_news += f"📅 {datetime.now().strftime('%d.%m.%Y')}\n\n"
+            
+            for source_name, source_url in uzbek_sources:
+                try:
+                    downloaded = trafilatura.fetch_url(source_url)
+                    if downloaded:
+                        text = trafilatura.extract(downloaded)
+                        if text:
+                            news_summary = text[:400] + "..." if len(text) > 400 else text
+                            all_news += f"{source_name}:\n{news_summary}\n\n"
+                        else:
+                            all_news += f"{source_name}:\n❌ Yangilik yuklanmadi\n\n"
+                    else:
+                        all_news += f"{source_name}:\n❌ Sayt ochilmadi\n\n"
+                except Exception as e:
+                    all_news += f"{source_name}:\n❌ Xatolik\n\n"
+            
+            all_news += "🔗 **Manbalar:**\n"
+            all_news += "🇺🇿 Kun.uz: https://kun.uz\n"
+            all_news += "📺 Daryo.uz: https://daryo.uz\n"
+            all_news += "📰 Gazeta.uz: https://www.gazeta.uz\n"
+            all_news += "📱 Telegram: https://t.me/kununuz\n"
+            
+            bot.send_message(message.chat.id, all_news)
+            
+        except Exception as e:
+            fallback_news = f"""
+🇺🇿 **O'zbekiston yangiliklari**
+❌ Yangiliklar yuklanmadi
+
+🔗 **To'g'ridan-to'g'ri havola:**
+🇺🇿 Kun.uz: https://kun.uz
+📺 Daryo.uz: https://daryo.uz
+📰 Gazeta.uz: https://www.gazeta.uz
+📱 @kununuz: https://t.me/kununuz
+"""
+            bot.send_message(message.chat.id, fallback_news)
+        
+        clear_user_state(message.chat.id)
+        show_employee_panel(message)
+
+    def get_sports_news(message):
+        """Get sports news specifically"""
+        bot.send_message(
+            message.chat.id,
+            "📺 Sport yangiliklari yuklanmoqda...\n"
+            "⏳ Biroz kuting..."
+        )
+        
+        try:
+            import trafilatura
+            from datetime import datetime
+            
+            sports_sources = [
+                ("🏟 Sport.uz", "https://sport.uz"),
+                ("⚽️ Football.uz", "https://football.uz"),
+            ]
+            
+            all_news = f"📺 **Sport yangiliklari**\n"
+            all_news += f"📅 {datetime.now().strftime('%d.%m.%Y')}\n\n"
+            
+            for source_name, source_url in sports_sources:
+                try:
+                    downloaded = trafilatura.fetch_url(source_url)
+                    if downloaded:
+                        text = trafilatura.extract(downloaded)
+                        if text:
+                            news_summary = text[:400] + "..." if len(text) > 400 else text
+                            all_news += f"{source_name}:\n{news_summary}\n\n"
+                        else:
+                            all_news += f"{source_name}:\n❌ Yangilik yuklanmadi\n\n"
+                    else:
+                        all_news += f"{source_name}:\n❌ Sayt ochilmadi\n\n"
+                except Exception as e:
+                    all_news += f"{source_name}:\n❌ Xatolik\n\n"
+            
+            all_news += "🔗 **Sport manbalar:**\n"
+            all_news += "🏟 Sport.uz: https://sport.uz\n"
+            all_news += "⚽️ Football.uz: https://football.uz\n"
+            all_news += "🏀 ESPN: https://www.espn.com\n"
+            all_news += "🥅 Goal.com: https://www.goal.com\n"
+            
+            bot.send_message(message.chat.id, all_news)
+            
+        except Exception as e:
+            fallback_news = f"""
+📺 **Sport yangiliklari**
+❌ Yangiliklar yuklanmadi
+
+🔗 **To'g'ridan-to'g'ri havola:**
+🏟 Sport.uz: https://sport.uz
+⚽️ Football.uz: https://football.uz
+🏀 ESPN: https://www.espn.com
+🥅 Goal.com: https://www.goal.com
+"""
+            bot.send_message(message.chat.id, fallback_news)
+        
+        clear_user_state(message.chat.id)
+        show_employee_panel(message)
+
+    def get_economy_news(message):
+        """Get economy news specifically"""
+        bot.send_message(
+            message.chat.id,
+            "💼 Iqtisodiyot yangiliklari yuklanmoqda...\n"
+            "⏳ Biroz kuting..."
+        )
+        
+        try:
+            import trafilatura
+            from datetime import datetime
+            
+            economy_sources = [
+                ("💼 Review.uz", "https://review.uz"),
+                ("📈 Spot.uz", "https://spot.uz"),
+            ]
+            
+            all_news = f"💼 **Iqtisodiyot yangiliklari**\n"
+            all_news += f"📅 {datetime.now().strftime('%d.%m.%Y')}\n\n"
+            
+            for source_name, source_url in economy_sources:
+                try:
+                    downloaded = trafilatura.fetch_url(source_url)
+                    if downloaded:
+                        text = trafilatura.extract(downloaded)
+                        if text:
+                            news_summary = text[:400] + "..." if len(text) > 400 else text
+                            all_news += f"{source_name}:\n{news_summary}\n\n"
+                        else:
+                            all_news += f"{source_name}:\n❌ Yangilik yuklanmadi\n\n"
+                    else:
+                        all_news += f"{source_name}:\n❌ Sayt ochilmadi\n\n"
+                except Exception as e:
+                    all_news += f"{source_name}:\n❌ Xatolik\n\n"
+            
+            all_news += "🔗 **Iqtisodiy manbalar:**\n"
+            all_news += "💼 Review.uz: https://review.uz\n"
+            all_news += "📈 Spot.uz: https://spot.uz\n"
+            all_news += "💰 Forbes: https://www.forbes.com\n"
+            all_news += "📊 Bloomberg: https://www.bloomberg.com\n"
+            
+            bot.send_message(message.chat.id, all_news)
+            
+        except Exception as e:
+            fallback_news = f"""
+💼 **Iqtisodiyot yangiliklari**
+❌ Yangiliklar yuklanmadi
+
+🔗 **To'g'ridan-to'g'ri havola:**
+💼 Review.uz: https://review.uz
+📈 Spot.uz: https://spot.uz
+💰 Forbes: https://www.forbes.com
+📊 Bloomberg: https://www.bloomberg.com
+"""
+            bot.send_message(message.chat.id, fallback_news)
+        
+        clear_user_state(message.chat.id)
+        show_employee_panel(message)
+
     def show_popular_movies(message):
         """Show popular movies list"""
         popular_list = """
@@ -3802,6 +4081,8 @@ Masalan: "Action" yoki "Comedy"
             news_sources = [
                 ("🌍 Dunyo yangiliklari", "https://www.bbc.com/uzbek"),
                 ("🇺🇿 O'zbekiston yangiliklari", "https://kun.uz"),
+                ("📺 Sport yangiliklari", "https://sport.uz"),
+                ("💼 Iqtisodiyot", "https://daryo.uz/category/economics"),
             ]
             
             all_news = "📰 **Bugungi yangiliklar**\n"
@@ -3832,6 +4113,10 @@ Masalan: "Action" yoki "Comedy"
             all_news += "🇺🇿 Kun.uz: https://kun.uz\n"
             all_news += "📺 Daryo.uz: https://daryo.uz\n"
             all_news += "📰 Gazeta.uz: https://www.gazeta.uz\n"
+            all_news += "🏟 Sport.uz: https://sport.uz\n"
+            all_news += "💼 Biznes: https://review.uz\n"
+            all_news += "🌐 Sputnik: https://uz.sputniknews.ru\n"
+            all_news += "📱 Telegram: https://t.me/kununuz\n"
             
             # Send news in chunks if too long
             if len(all_news) > 4000:
@@ -3851,7 +4136,15 @@ Masalan: "Action" yoki "Comedy"
 🇺🇿 Kun.uz: https://kun.uz
 📺 Daryo.uz: https://daryo.uz
 📰 Gazeta.uz: https://www.gazeta.uz
+🏟 Sport.uz: https://sport.uz
+💼 Review.uz: https://review.uz
 🌐 Sputnik: https://uz.sputniknews.ru
+📱 Telegram: https://t.me/kununuz
+
+📊 **Eng so'nggi yangiliklar:**
+⚡️ Tezkor yangiliklar uchun telegram kanallarni kuzatib boring
+📡 Jonli efirlar: O'zbekiston 24, Zo'r TV
+🎯 Mahalliy yangiliklar: Viloyat hokimliklar sayti
 """
             bot.send_message(message.chat.id, error_news)
         
