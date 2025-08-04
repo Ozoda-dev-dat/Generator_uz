@@ -15,6 +15,7 @@ EMPLOYEES = {
     "👨‍🔧 Asomiddin": 1894259641,
     "👨‍🔧 Farruh": 1037206796,
     "Ozoda": 826129625,
+    "Azimjon": 6763936748,
 }
 
 # File paths

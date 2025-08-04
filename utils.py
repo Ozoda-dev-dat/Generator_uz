@@ -346,3 +346,93 @@ def generate_debts_report_excel() -> Optional[str]:
     
     wb.save(filepath)
     return filepath
+
+def generate_custom_export(export_type: str) -> Optional[str]:
+    """Generate custom data export based on type"""
+    ensure_directories()
+    
+    from database import DATABASE_PATH
+    import sqlite3
+    
+    conn = sqlite3.connect(DATABASE_PATH)
+    cursor = conn.cursor()
+    
+    wb = openpyxl.Workbook()
+    
+    try:
+        if export_type == "📊 Barcha ma'lumotlar":
+            # Tasks sheet
+            ws_tasks = wb.active
+            ws_tasks.title = "Vazifalar"
+            ws_tasks.append(["ID", "Tavsif", "Xodim", "Holat", "To'lov", "Olingan", "Yaratilgan", "Yakunlangan"])
+            
+            cursor.execute("SELECT * FROM tasks ORDER BY created_at DESC")
+            for task in cursor.fetchall():
+                ws_tasks.append([
+                    task[0], task[1], task[6], task[8], task[5] or 0, 
+                    task[14] or 0, task[9], task[11] or ""
+                ])
+            
+            # Debts sheet
+            ws_debts = wb.create_sheet("Qarzlar")
+            ws_debts.append(["Xodim", "Miqdor", "Sabab", "To'lov sanasi", "Yaratilgan"])
+            
+            cursor.execute("SELECT * FROM debts ORDER BY created_at DESC")
+            for debt in cursor.fetchall():
+                ws_debts.append([debt[1], debt[3], debt[4], debt[5], debt[6]])
+            
+            # Locations sheet
+            ws_locations = wb.create_sheet("Lokatsiyalar")
+            ws_locations.append(["Xodim", "Latitude", "Longitude", "Tur", "Vaqt"])
+            
+            cursor.execute("SELECT * FROM employee_locations ORDER BY created_at DESC LIMIT 1000")
+            for loc in cursor.fetchall():
+                ws_locations.append([loc[1], loc[3], loc[4], loc[5], loc[6]])
+        
+        elif export_type == "📝 Faqat vazifalar":
+            ws = wb.active
+            ws.title = "Barcha Vazifalar"
+            ws.append(["ID", "Tavsif", "Xodim", "Holat", "To'lov (so'm)", "Olingan (so'm)", 
+                      "Joylashuv", "Yaratilgan", "Boshlangan", "Yakunlangan", "Hisobot"])
+            
+            cursor.execute("SELECT * FROM tasks ORDER BY created_at DESC")
+            for task in cursor.fetchall():
+                ws.append([
+                    task[0], task[1], task[6], task[8], task[5] or 0, task[14] or 0,
+                    task[4] or "Belgilanmagan", task[9], task[10] or "", task[11] or "", 
+                    task[12][:100] if task[12] else ""
+                ])
+        
+        elif export_type == "💸 Faqat qarzlar":
+            ws = wb.active
+            ws.title = "Barcha Qarzlar"
+            ws.append(["Xodim", "Chat ID", "Vazifa ID", "Miqdor (so'm)", "Sabab", 
+                      "To'lov sanasi", "Yaratilgan"])
+            
+            cursor.execute("SELECT * FROM debts ORDER BY created_at DESC")
+            for debt in cursor.fetchall():
+                ws.append([debt[1], debt[2], debt[3] or "", debt[4], debt[5], debt[6], debt[7]])
+        
+        elif export_type == "📍 Lokatsiya tarixi":
+            ws = wb.active
+            ws.title = "Lokatsiya Tarixi"
+            ws.append(["Xodim", "Chat ID", "Latitude", "Longitude", "Tur", "Vaqt", "Live"])
+            
+            cursor.execute("SELECT * FROM employee_locations ORDER BY created_at DESC")
+            for loc in cursor.fetchall():
+                ws.append([loc[1], loc[2], loc[3], loc[4], loc[5], loc[6], loc[7]])
+        
+        conn.close()
+        
+        # Save file
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        safe_type = export_type.replace("📊", "").replace("📝", "").replace("💸", "").replace("📍", "").strip()
+        filename = f"export_{safe_type.replace(' ', '_')}_{timestamp}.xlsx"
+        filepath = os.path.join(REPORTS_DIR, filename)
+        
+        wb.save(filepath)
+        return filepath
+        
+    except Exception as e:
+        print(f"Export error: {e}")
+        return None

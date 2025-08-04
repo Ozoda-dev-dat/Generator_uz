@@ -303,19 +303,28 @@ Vazifani boshlash uchun "👤 Xodim" tugmasini bosing va vazifalar ro'yxatini ko
 
     @bot.message_handler(func=lambda message: message.text == "📊 Ma'lumotlar")
     def show_data_menu(message):
-        """Show data/reports menu"""
+        """Show comprehensive data management menu"""
         if message.chat.id != ADMIN_CHAT_ID:
             return
             
         markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
-        markup.add("📈 Umumiy hisobot", "📋 Xodimlar hisoboti")
-        markup.add("📥 Excel yuklab olish", "➕ Ma'lumot qo'shish")
-        markup.add("👁 Barcha ma'lumotlar", "🗑 Ma'lumot o'chirish")
+        markup.add("👁 Barcha ma'lumotlar", "📊 Statistika")
+        markup.add("➕ Ma'lumot qo'shish", "✏️ Ma'lumot tahrirlash")
+        markup.add("🗑 Ma'lumot o'chirish", "📋 Batafsil ko'rish")
+        markup.add("📤 Ma'lumot eksport", "🔄 Ma'lumot import")
+        markup.add("🧹 Ma'lumot tozalash", "🔍 Ma'lumot qidirish")
+        markup.add("📥 Excel yuklab olish", "📈 Umumiy hisobot")
         markup.add("🔙 Ortga")
         
         bot.send_message(
             message.chat.id,
-            "📊 Ma'lumotlar bo'limi\n\nKerakli variantni tanlang:",
+            "📊 To'liq Ma'lumotlar Boshqaruv Tizimi\n\n"
+            "🔹 Barcha jadvallardan ma'lumotlarni ko'rish\n"
+            "🔹 To'liq CRUD operatsiyalari (Create, Read, Update, Delete)\n"
+            "🔹 Professional Excel eksport/import\n"
+            "🔹 Real-time statistika va tahlil\n"
+            "🔹 Ma'lumotlarni qidirish va filtrlash\n\n"
+            "Kerakli amaliyotni tanlang:",
             reply_markup=markup
         )
 
@@ -1123,6 +1132,350 @@ Vazifani boshlash uchun "👤 Xodim" tugmasini bosing va vazifalar ro'yxatini ko
             
         except Exception as e:
             bot.send_message(message.chat.id, f"❌ Ma'lumotlarni olishda xatolik: {str(e)}")
+
+    @bot.message_handler(func=lambda message: message.text == "📊 Statistika")
+    def show_detailed_statistics(message):
+        """Show detailed system statistics"""
+        if message.chat.id != ADMIN_CHAT_ID:
+            return
+        
+        try:
+            from database import DATABASE_PATH
+            import sqlite3
+            
+            conn = sqlite3.connect(DATABASE_PATH)
+            cursor = conn.cursor()
+            
+            # Tasks statistics
+            cursor.execute("SELECT status, COUNT(*) FROM tasks GROUP BY status")
+            task_stats = cursor.fetchall()
+            
+            cursor.execute("SELECT SUM(payment_amount) FROM tasks WHERE payment_amount IS NOT NULL")
+            total_payments = cursor.fetchone()[0] or 0
+            
+            cursor.execute("SELECT SUM(received_amount) FROM tasks WHERE received_amount IS NOT NULL")
+            total_received = cursor.fetchone()[0] or 0
+            
+            # Debts statistics
+            cursor.execute("SELECT COUNT(*), SUM(amount) FROM debts")
+            debt_count, total_debt = cursor.fetchone()
+            total_debt = total_debt or 0
+            
+            # Employee locations statistics
+            cursor.execute("SELECT COUNT(*) FROM employee_locations WHERE created_at > datetime('now', '-24 hours')")
+            recent_locations = cursor.fetchone()[0]
+            
+            # Top employees by completed tasks
+            cursor.execute("""
+                SELECT assigned_to, COUNT(*) as completed_count 
+                FROM tasks 
+                WHERE status = 'completed' 
+                GROUP BY assigned_to 
+                ORDER BY completed_count DESC 
+                LIMIT 5
+            """)
+            top_employees = cursor.fetchall()
+            
+            conn.close()
+            
+            # Format task statistics
+            task_status_text = ""
+            for status, count in task_stats:
+                emoji = {"pending": "⏳", "in_progress": "🔄", "completed": "✅"}.get(status, "❓")
+                task_status_text += f"{emoji} {status.title()}: {count}\n"
+            
+            # Format top employees
+            top_emp_text = ""
+            for i, (emp_name, count) in enumerate(top_employees, 1):
+                top_emp_text += f"{i}. {emp_name}: {count} ta\n"
+            
+            stats_text = f"""
+📊 Batafsil Tizim Statistikasi
+
+📝 VAZIFALAR:
+{task_status_text}
+💰 Umumiy to'lov: {total_payments:,.0f} so'm
+💵 Olingan to'lov: {total_received:,.0f} so'm
+💸 To'lanmagan: {total_payments - total_received:,.0f} so'm
+
+💳 QARZLAR:
+🔢 Umumiy qarzlar: {debt_count} ta
+💰 Umumiy qarz miqdori: {total_debt:,.0f} so'm
+
+📍 LOKATSIYA KUZATUVI:
+📊 So'nggi 24 soat: {recent_locations} ta lokatsiya
+
+🏆 ENG FAOL XODIMLAR:
+{top_emp_text}
+
+👥 Ro'yxatdagi xodimlar: {len(EMPLOYEES)} ta
+
+🕐 Hisoblangan vaqt: {datetime.now().strftime('%d.%m.%Y %H:%M')}
+"""
+            
+            bot.send_message(message.chat.id, stats_text)
+            
+        except Exception as e:
+            bot.send_message(message.chat.id, f"❌ Statistika olishda xatolik: {str(e)}")
+
+    @bot.message_handler(func=lambda message: message.text == "✏️ Ma'lumot tahrirlash")
+    def start_edit_data(message):
+        """Start data editing process"""
+        if message.chat.id != ADMIN_CHAT_ID:
+            return
+        
+        markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        markup.add("📝 Vazifa tahrirlash", "👤 Xodim ma'lumotlari")
+        markup.add("💸 Qarz tahrirlash", "💬 Xabar tahrirlash")
+        markup.add("🔙 Bekor qilish")
+        
+        bot.send_message(
+            message.chat.id,
+            "✏️ Qanday ma'lumotni tahrirlashni xohlaysiz?",
+            reply_markup=markup
+        )
+
+    @bot.message_handler(func=lambda message: message.text == "📤 Ma'lumot eksport")
+    def start_data_export(message):
+        """Start data export process"""
+        if message.chat.id != ADMIN_CHAT_ID:
+            return
+        
+        markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        markup.add("📊 Barcha ma'lumotlar", "📝 Faqat vazifalar")
+        markup.add("💸 Faqat qarzlar", "📍 Lokatsiya tarixi")
+        markup.add("👥 Xodimlar ma'lumoti", "💬 Xabarlar tarixi")
+        markup.add("🔙 Bekor qilish")
+        
+        bot.send_message(
+            message.chat.id,
+            "📤 Qanday ma'lumotlarni eksport qilmoqchisiz?\n\n"
+            "Excel formatida professional hisobot tayyorlanadi.",
+            reply_markup=markup
+        )
+
+    @bot.message_handler(func=lambda message: message.text == "🔄 Ma'lumot import")
+    def start_data_import(message):
+        """Start data import process"""
+        if message.chat.id != ADMIN_CHAT_ID:
+            return
+        
+        markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        markup.add("📝 Vazifalar import", "👤 Xodimlar import")
+        markup.add("💸 Qarzlar import", "📋 Template yuklab olish")
+        markup.add("🔙 Bekor qilish")
+        
+        bot.send_message(
+            message.chat.id,
+            "🔄 Ma'lumot Import Tizimi\n\n"
+            "Excel fayldan ma'lumotlarni import qilish uchun:\n"
+            "1. Template faylni yuklab oling\n"  
+            "2. Ma'lumotlarni to'ldiring\n"
+            "3. Faylni yuklang\n\n"
+            "Qanday ma'lumot import qilmoqchisiz?",
+            reply_markup=markup
+        )
+
+    @bot.message_handler(func=lambda message: message.text == "🧹 Ma'lumot tozalash")
+    def start_data_cleanup(message):
+        """Start data cleanup process"""
+        if message.chat.id != ADMIN_CHAT_ID:
+            return
+        
+        markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        markup.add("🗑 Eski vazifalarni o'chirish", "💸 Yopilgan qarzlarni tozalash")
+        markup.add("📍 Eski lokatsiyalarni o'chirish", "💬 Eski xabarlarni o'chirish")
+        markup.add("🔄 Nofaol sessiyalarni tozalash", "⚠️ Barcha ma'lumotlarni o'chirish")
+        markup.add("🔙 Bekor qilish")
+        
+        bot.send_message(
+            message.chat.id,
+            "🧹 Ma'lumot Tozalash Tizimi\n\n"
+            "⚠️ DIQQAT: Bu amallar qaytarib bo'lmaydi!\n\n"
+            "Qanday ma'lumotlarni tozalamoqchisiz?",
+            reply_markup=markup
+        )
+
+    @bot.message_handler(func=lambda message: message.text == "🔍 Ma'lumot qidirish")
+    def start_data_search(message):
+        """Start data search process"""
+        if message.chat.id != ADMIN_CHAT_ID:
+            return
+        
+        markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        markup.add("🔍 Vazifa qidirish", "👤 Xodim qidirish")
+        markup.add("💸 Qarz qidirish", "📅 Sana bo'yicha qidirish")
+        markup.add("💰 Summa bo'yicha qidirish", "📍 Lokatsiya qidirish")
+        markup.add("🔙 Bekor qilish")
+        
+        set_user_state(message.chat.id, "search_data_type")
+        
+        bot.send_message(
+            message.chat.id,
+            "🔍 Ma'lumot Qidirish Tizimi\n\n"
+            "Qanday ma'lumot qidirmoqchisiz?",
+            reply_markup=markup
+        )
+
+    @bot.message_handler(func=lambda message: get_user_state(message.chat.id)[0] == "search_data_type")
+    def handle_search_type_selection(message):
+        """Handle data search type selection"""
+        if message.text == "🔙 Bekor qilish":
+            clear_user_state(message.chat.id)
+            show_data_menu(message)
+            return
+        
+        search_types = {
+            "🔍 Vazifa qidirish": "task_search",
+            "👤 Xodim qidirish": "employee_search", 
+            "💸 Qarz qidirish": "debt_search",
+            "📅 Sana bo'yicha qidirish": "date_search",
+            "💰 Summa bo'yicha qidirish": "amount_search",
+            "📍 Lokatsiya qidirish": "location_search"
+        }
+        
+        if message.text in search_types:
+            search_type = search_types[message.text]
+            set_user_state(message.chat.id, f"search_{search_type}")
+            
+            prompts = {
+                "task_search": "🔍 Vazifa ID, tavsif yoki xodim nomini kiriting:",
+                "employee_search": "👤 Xodim nomini kiriting:",
+                "debt_search": "💸 Xodim nomi yoki qarz sababini kiriting:",
+                "date_search": "📅 Sanani kiriting (DD.MM.YYYY formatida):",
+                "amount_search": "💰 Summani kiriting (so'mda):",
+                "location_search": "📍 Joylashuv ma'lumotini kiriting:"
+            }
+            
+            bot.send_message(
+                message.chat.id,
+                prompts[search_type],
+                reply_markup=types.ReplyKeyboardRemove()
+            )
+        else:
+            bot.send_message(message.chat.id, "❌ Noto'g'ri tanlov. Qaytadan tanlang.")
+
+    @bot.message_handler(func=lambda message: get_user_state(message.chat.id)[0].startswith("search_"))
+    def handle_search_query(message):
+        """Handle search queries"""
+        state = get_user_state(message.chat.id)[0]
+        query = message.text.strip()
+        
+        try:
+            from database import DATABASE_PATH
+            import sqlite3
+            
+            conn = sqlite3.connect(DATABASE_PATH)
+            cursor = conn.cursor()
+            
+            results = []
+            
+            if state == "search_task_search":
+                cursor.execute("""
+                    SELECT id, description, assigned_to, status, created_at, payment_amount
+                    FROM tasks 
+                    WHERE id LIKE ? OR description LIKE ? OR assigned_to LIKE ?
+                """, (f"%{query}%", f"%{query}%", f"%{query}%"))
+                results = cursor.fetchall()
+                
+                if results:
+                    result_text = "🔍 Vazifa qidiruv natijalari:\n\n"
+                    for task_id, desc, assigned_to, status, created_at, payment in results:
+                        emoji = {"pending": "⏳", "in_progress": "🔄", "completed": "✅"}.get(status, "❓")
+                        result_text += f"{emoji} ID: {task_id}\n"
+                        result_text += f"📝 {desc[:50]}{'...' if len(desc) > 50 else ''}\n"
+                        result_text += f"👤 {assigned_to} | 💰 {payment or 0:,.0f} so'm\n\n"
+                else:
+                    result_text = "❌ Hech qanday vazifa topilmadi."
+            
+            elif state == "search_employee_search":
+                cursor.execute("""
+                    SELECT COUNT(*) as task_count, 
+                           SUM(CASE WHEN status='completed' THEN 1 ELSE 0 END) as completed,
+                           SUM(payment_amount) as total_payment
+                    FROM tasks 
+                    WHERE assigned_to LIKE ?
+                """, (f"%{query}%",))
+                emp_stats = cursor.fetchone()
+                
+                if emp_stats and emp_stats[0] > 0:
+                    task_count, completed, total_payment = emp_stats
+                    result_text = f"👤 {query} xodimi haqida ma'lumot:\n\n"
+                    result_text += f"📝 Umumiy vazifalar: {task_count}\n"
+                    result_text += f"✅ Bajarilgan: {completed}\n"
+                    result_text += f"💰 Umumiy to'lov: {total_payment or 0:,.0f} so'm"
+                else:
+                    result_text = "❌ Bunday xodim topilmadi."
+            
+            elif state == "search_debt_search":
+                cursor.execute("""
+                    SELECT employee_name, amount, reason, payment_date, created_at
+                    FROM debts 
+                    WHERE employee_name LIKE ? OR reason LIKE ?
+                """, (f"%{query}%", f"%{query}%"))
+                results = cursor.fetchall()
+                
+                if results:
+                    result_text = "💸 Qarz qidiruv natijalari:\n\n"
+                    for emp_name, amount, reason, pay_date, created in results:
+                        result_text += f"👤 {emp_name}\n"
+                        result_text += f"💰 {amount:,.0f} so'm\n"
+                        result_text += f"📝 {reason}\n"
+                        result_text += f"📅 {pay_date}\n\n"
+                else:
+                    result_text = "❌ Hech qanday qarz topilmadi."
+            else:
+                result_text = "❌ Qidiruv turi tanilmadi."
+            
+            conn.close()
+            
+            if len(result_text) > 4000:
+                parts = [result_text[i:i+4000] for i in range(0, len(result_text), 4000)]
+                for part in parts:
+                    bot.send_message(message.chat.id, part)
+            else:
+                bot.send_message(message.chat.id, result_text)
+            
+        except Exception as e:
+            bot.send_message(message.chat.id, f"❌ Qidirishda xatolik: {str(e)}")
+        
+        clear_user_state(message.chat.id)
+        show_data_menu(message)
+
+    # EXPORT HANDLERS
+    @bot.message_handler(func=lambda message: message.text in [
+        "📊 Barcha ma'lumotlar", "📝 Faqat vazifalar", "💸 Faqat qarzlar", 
+        "📍 Lokatsiya tarixi", "👥 Xodimlar ma'lumoti", "💬 Xabarlar tarixi"
+    ])
+    def handle_data_export(message):
+        """Handle data export requests"""
+        if message.chat.id != ADMIN_CHAT_ID:
+            return
+        
+        export_type = message.text
+        
+        bot.send_message(message.chat.id, f"📤 {export_type} eksport qilinmoqda...")
+        
+        try:
+            from utils import generate_custom_export
+            filepath = generate_custom_export(export_type)
+            
+            if filepath and os.path.exists(filepath):
+                with open(filepath, 'rb') as f:
+                    bot.send_document(
+                        message.chat.id,
+                        f,
+                        caption=f"📊 {export_type} - Excel hisobot"
+                    )
+                # Clean up file
+                os.remove(filepath)
+                bot.send_message(message.chat.id, "✅ Eksport muvaffaqiyatli yakunlandi!")
+            else:
+                bot.send_message(message.chat.id, "❌ Eksport qilishda xatolik yuz berdi.")
+        except Exception as e:
+            bot.send_message(message.chat.id, f"❌ Eksport xatoligi: {str(e)}")
+        
+        show_data_menu(message)
 
     # EMPLOYEE TRACKING HANDLERS
     @bot.message_handler(func=lambda message: message.text == "📍 Xodimlarni kuzatish")
