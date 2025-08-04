@@ -92,13 +92,13 @@ def main():
         """Show admin panel"""
         markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
         markup.add("➕ Yangi xodim qo'shish", "📤 Vazifa berish")
-        markup.add("📍 Xodimlarni kuzatish", "📩 Xabarlar")
+        markup.add("📍 Xodimlarni kuzatish", "👥 Mijozlar so'rovlari")
         markup.add("💸 Qarzlar", "📊 Ma'lumotlar")
         markup.add("🔙 Ortga")
         
         bot.send_message(
             message.chat.id,
-            "🛠 Admin panelga xush kelibsiz!\n\nKerakli bo'limni tanlang:",
+            "🛠 Admin paneli\n\nKerakli bo'limni tanlang:",
             reply_markup=markup
         )
 
@@ -350,15 +350,125 @@ Hozirda yangi xodim qo'shish config.py faylida qo'lda amalga oshiriladi.
 2. config.py faylidagi EMPLOYEES ro'yxatiga qo'shish
 3. Botni qayta ishga tushirish
 
-**Joriy xodimlar:**
+💡 Yangi xodim qo'shish uchun dasturchi bilan bog'laning.
 """
         
-        for i, (name, chat_id) in enumerate(EMPLOYEES.items(), 1):
-            info_text += f"{i}. {name} - {chat_id}\n"
-        
-        info_text += "\n💡 Yangi xodim qo'shish uchun admin bilan bog'laning."
-        
         bot.send_message(message.chat.id, info_text, parse_mode='Markdown')
+    
+    @bot.message_handler(func=lambda message: message.text == "👥 Mijozlar so'rovlari")
+    def show_customer_requests(message):
+        """Show customer requests menu"""
+        if message.chat.id != ADMIN_CHAT_ID:
+            return
+            
+        markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        markup.add("📋 Faol suhbatlar", "📞 Mijoz qo'ng'iroqlari")
+        markup.add("📊 Mijozlar statistikasi", "🔙 Ortga")
+        
+        bot.send_message(
+            message.chat.id,
+            "👥 Mijozlar so'rovlari bo'limi\n\n"
+            "Mijozlar bilan ishlash uchun kerakli variantni tanlang:\n\n"
+            "💡 Mijozga javob berish: /reply [chat_id] [xabar]",
+            reply_markup=markup
+        )
+    
+    @bot.message_handler(func=lambda message: message.text == "📋 Faol suhbatlar")
+    def show_active_chats(message):
+        """Show active customer chats"""
+        if message.chat.id != ADMIN_CHAT_ID:
+            return
+        
+        # Get active customer chats from database
+        try:
+            from database import DATABASE_PATH
+            import sqlite3
+            
+            conn = sqlite3.connect(DATABASE_PATH)
+            cursor = conn.cursor()
+            
+            # Get users in customer_chat state
+            cursor.execute("""
+                SELECT chat_id, updated_at FROM user_states 
+                WHERE state = 'customer_chat'
+                ORDER BY updated_at DESC
+            """)
+            
+            active_chats = cursor.fetchall()
+            conn.close()
+            
+            if not active_chats:
+                bot.send_message(message.chat.id, "📭 Hozirda faol mijoz suhbatlari yo'q.")
+                return
+            
+            chat_text = "📋 Faol mijoz suhbatlari:\n\n"
+            
+            for i, (chat_id, updated_at) in enumerate(active_chats, 1):
+                try:
+                    # Try to get user info
+                    user_info = bot.get_chat(chat_id)
+                    name = user_info.first_name or "Noma'lum"
+                    username = f"@{user_info.username}" if user_info.username else "Username yo'q"
+                except:
+                    name = "Noma'lum mijoz"
+                    username = ""
+                
+                chat_text += f"{i}. 👤 {name} {username}\n"
+                chat_text += f"   🆔 Chat ID: {chat_id}\n"
+                chat_text += f"   🕐 Oxirgi faollik: {updated_at[:16]}\n"
+                chat_text += f"   💬 Javob: /reply {chat_id} [xabar]\n\n"
+            
+            bot.send_message(message.chat.id, chat_text)
+            
+        except Exception as e:
+            bot.send_message(message.chat.id, f"❌ Xatolik: {str(e)}")
+    
+    @bot.message_handler(func=lambda message: message.text == "📊 Mijozlar statistikasi")
+    def show_customer_stats(message):
+        """Show customer statistics"""
+        if message.chat.id != ADMIN_CHAT_ID:
+            return
+        
+        try:
+            from database import DATABASE_PATH
+            import sqlite3
+            
+            conn = sqlite3.connect(DATABASE_PATH)
+            cursor = conn.cursor()
+            
+            # Get total customer messages
+            cursor.execute("""
+                SELECT COUNT(*) FROM messages 
+                WHERE to_chat_id = ? AND message_type = 'general'
+            """, (ADMIN_CHAT_ID,))
+            
+            total_messages = cursor.fetchone()[0]
+            
+            # Get active chats today
+            today = datetime.now().strftime('%Y-%m-%d')
+            cursor.execute("""
+                SELECT COUNT(*) FROM user_states 
+                WHERE state = 'customer_chat' AND updated_at LIKE ?
+            """, (f"{today}%",))
+            
+            today_chats = cursor.fetchone()[0]
+            
+            conn.close()
+            
+            stats_text = f"""
+📊 Mijozlar statistikasi
+
+📩 Jami xabarlar: {total_messages}
+👥 Bugungi suhbatlar: {today_chats}
+🕐 Oxirgi yangilanish: {datetime.now().strftime('%H:%M')}
+
+💡 Barcha faol suhbatlarni ko'rish uchun "📋 Faol suhbatlar" tugmasini bosing.
+"""
+            
+            bot.send_message(message.chat.id, stats_text)
+            
+        except Exception as e:
+            bot.send_message(message.chat.id, f"❌ Statistika olishda xatolik: {str(e)}")
 
     # EMPLOYEE SECTION
     @bot.message_handler(func=lambda message: message.text == "👤 Xodim")
@@ -671,6 +781,9 @@ Hozirda yangi xodim qo'shish config.py faylida qo'lda amalga oshiriladi.
             customer_name = message.from_user.first_name or "Noma'lum mijoz"
             customer_username = f"@{message.from_user.username}" if message.from_user.username else "Username yo'q"
             
+            # Add message to database
+            add_message(message.chat.id, ADMIN_CHAT_ID, "Yangi mijoz suhbati boshlandi", "customer_start")
+            
             bot.send_message(
                 ADMIN_CHAT_ID,
                 f"🔔 Yangi mijoz suhbati boshlandi!\n\n"
@@ -700,6 +813,9 @@ Hozirda yangi xodim qo'shish config.py faylida qo'lda amalga oshiriladi.
             admin_message += f"🆔 {message.chat.id}\n\n"
             admin_message += f"📝 {message.text}\n\n"
             admin_message += f"Javob: /reply {message.chat.id} [xabar]"
+            
+            # Add message to database
+            add_message(message.chat.id, ADMIN_CHAT_ID, message.text, "customer_message")
             
             bot.send_message(ADMIN_CHAT_ID, admin_message)
             
