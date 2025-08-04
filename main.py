@@ -1823,7 +1823,7 @@ Vazifani boshlash uchun "👤 Xodim" tugmasini bosing va vazifalar ro'yxatini ko
 
     @bot.message_handler(func=lambda message: message.text == "📂 Vazifalar tarixi")
     def show_employee_task_history(message):
-        """Show employee's task history"""
+        """Show employee's task history with interactive options"""
         employee_name = None
         for name, chat_id in EMPLOYEES.items():
             if chat_id == message.chat.id:
@@ -1834,33 +1834,119 @@ Vazifani boshlash uchun "👤 Xodim" tugmasini bosing va vazifalar ro'yxatini ko
             bot.send_message(message.chat.id, "❌ Profil topilmadi.")
             return
         
+        # Show options for history view
+        markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        markup.add("📊 Umumiy tarix", "📅 So'nggi 7 kun")
+        markup.add("📆 So'nggi 30 kun", "💰 Faqat to'lovli vazifalar")
+        markup.add("🔙 Ortga")
+        
+        set_user_state(message.chat.id, "task_history_menu")
+        
+        bot.send_message(
+            message.chat.id,
+            f"📂 **{employee_name}** - Vazifalar tarixi\n\n"
+            "Qaysi ko'rinishni tanlaysiz?",
+            reply_markup=markup
+        )
+
+    @bot.message_handler(func=lambda message: get_user_state(message.chat.id)[0] == "task_history_menu")
+    def handle_task_history_menu(message):
+        """Handle task history menu selections"""
+        if message.text == "🔙 Ortga":
+            clear_user_state(message.chat.id)
+            show_employee_panel(message)
+            return
+        
+        employee_name = None
+        for name, chat_id in EMPLOYEES.items():
+            if chat_id == message.chat.id:
+                employee_name = name
+                break
+        
+        if not employee_name:
+            bot.send_message(message.chat.id, "❌ Profil topilmadi.")
+            return
+        
+        if message.text == "📊 Umumiy tarix":
+            show_complete_task_history(message, employee_name, "all")
+        elif message.text == "📅 So'nggi 7 kun":
+            show_complete_task_history(message, employee_name, "week")
+        elif message.text == "📆 So'nggi 30 kun":
+            show_complete_task_history(message, employee_name, "month")
+        elif message.text == "💰 Faqat to'lovli vazifalar":
+            show_complete_task_history(message, employee_name, "paid")
+        else:
+            bot.send_message(message.chat.id, "❌ Noto'g'ri tanlov.")
+
+    def show_complete_task_history(message, employee_name, period_type):
+        """Show detailed task history based on period"""
+        
         try:
             from database import DATABASE_PATH
             import sqlite3
-            from datetime import datetime
+            from datetime import datetime, timedelta
             
             conn = sqlite3.connect(DATABASE_PATH)
             cursor = conn.cursor()
             
-            # Get completed tasks for this employee
-            cursor.execute("""
+            # Build query based on period type
+            base_query = """
                 SELECT id, title, description, status, created_at, completion_report, 
                        received_amount, completion_media
                 FROM tasks 
                 WHERE assigned_to = ? AND status = 'completed'
-                ORDER BY created_at DESC 
-                LIMIT 20
-            """, (employee_name,))
+            """
+            
+            params = [employee_name]
+            
+            if period_type == "week":
+                week_ago = (datetime.now() - timedelta(days=7)).isoformat()
+                base_query += " AND created_at >= ?"
+                params.append(week_ago)
+                limit = 50
+            elif period_type == "month":
+                month_ago = (datetime.now() - timedelta(days=30)).isoformat()
+                base_query += " AND created_at >= ?"
+                params.append(month_ago)
+                limit = 100
+            elif period_type == "paid":
+                base_query += " AND received_amount > 0"
+                limit = 50
+            else:  # all
+                limit = 30
+            
+            base_query += f" ORDER BY created_at DESC LIMIT {limit}"
+            
+            cursor.execute(base_query, params)
             
             completed_tasks = cursor.fetchall()
             conn.close()
             
             if not completed_tasks:
-                bot.send_message(message.chat.id, "📭 Sizda bajarilgan vazifalar tarixi yo'q.")
+                period_text = {
+                    "week": "so'nggi 7 kun",
+                    "month": "so'nggi 30 kun", 
+                    "paid": "to'lovli",
+                    "all": "barcha"
+                }.get(period_type, "")
+                
+                bot.send_message(message.chat.id, f"📭 {period_text} davrdagi bajarilgan vazifalar topilmadi.")
+                clear_user_state(message.chat.id)
+                show_employee_panel(message)
                 return
             
-            history_text = f"📂 **{employee_name}** - Vazifalar tarixi\n\n"
+            # Period title
+            period_titles = {
+                "week": "So'nggi 7 kun",
+                "month": "So'nggi 30 kun",
+                "paid": "To'lovli vazifalar",
+                "all": "Barcha vazifalar"
+            }
+            
+            period_title = period_titles.get(period_type, "Vazifalar tarixi")
+            history_text = f"📂 **{employee_name}** - {period_title}\n\n"
             total_earned = 0
+            total_tasks = len(completed_tasks)
             
             for i, task in enumerate(completed_tasks, 1):
                 task_id, title, description, status, created_at, completion_report, received_amount, completion_media = task
@@ -1882,8 +1968,22 @@ Vazifani boshlash uchun "👤 Xodim" tugmasini bosing va vazifalar ro'yxatini ko
                     history_text += f"   📝 {report_preview}\n"
                 history_text += "\n"
             
-            history_text += f"💰 **Jami ishlab topilgan:** {total_earned:,.0f} so'm\n"
-            history_text += f"📊 **Bajarilgan vazifalar:** {len(completed_tasks)} ta"
+            # Summary statistics
+            avg_earning = total_earned / total_tasks if total_tasks > 0 else 0
+            
+            history_text += f"📊 **Statistika:**\n"
+            history_text += f"🔢 Jami vazifalar: {total_tasks} ta\n"
+            history_text += f"💰 Jami daromad: {total_earned:,.0f} so'm\n"
+            history_text += f"📈 O'rtacha to'lov: {avg_earning:,.0f} so'm\n\n"
+            
+            # Performance indicators
+            if total_earned > 0:
+                if avg_earning >= 100000:
+                    history_text += "🏆 A'lo natija! Yuqori to'lovli vazifalar!\n"
+                elif avg_earning >= 50000:
+                    history_text += "⭐️ Yaxshi natija! Davom eting!\n"
+                else:
+                    history_text += "💪 Yaxshi ish! Yanada yuqoriga!\n"
             
             # Send in chunks if too long
             if len(history_text) > 4000:
@@ -1892,9 +1992,12 @@ Vazifani boshlash uchun "👤 Xodim" tugmasini bosing va vazifalar ro'yxatini ko
                     bot.send_message(message.chat.id, part)
             else:
                 bot.send_message(message.chat.id, history_text)
-                
+            
         except Exception as e:
             bot.send_message(message.chat.id, f"❌ Vazifalar tarixi yuklanmadi: {str(e)}")
+        
+        clear_user_state(message.chat.id)
+        show_employee_panel(message)
 
     @bot.message_handler(func=lambda message: message.text == "📊 Hisobotlar")
     def show_employee_reports_menu(message):
