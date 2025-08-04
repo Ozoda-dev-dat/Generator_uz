@@ -4245,7 +4245,7 @@ Masalan: "Action" yoki "Comedy"
             "❓ Tushunmadim. Iltimos, menyudan tanlang yoki /start bosing."
         )
 
-    # Start the bot
+    # Start the bot with enhanced error handling for production
     try:
         print("🚀 Enhanced Telegram Task Management Bot ishga tushmoqda...")
         print(f"🔑 Bot Token: {'✅ Mavjud' if BOT_TOKEN else '❌ Mavjud emas'}")
@@ -4256,16 +4256,31 @@ Masalan: "Action" yoki "Comedy"
         print("📱 Bot Telegram orqali foydalanishga tayyor")
         print("🛑 Botni to'xtatish uchun Ctrl+C bosing")
         
-        bot.infinity_polling(none_stop=True, interval=0, timeout=60)
+        # Enhanced polling with better error handling for production
+        while True:
+            try:
+                bot.infinity_polling(none_stop=True, interval=1, timeout=20)
+            except Exception as e:
+                print(f"⚠️ Bot ulanishida xatolik: {e}")
+                print("🔄 5 soniyadan keyin qayta urinish...")
+                import time
+                time.sleep(5)
+                continue
         
     except KeyboardInterrupt:
         print("\n🛑 Bot to'xtatildi.")
         sys.exit(0)
     except Exception as e:
-        print(f"❌ Bot xatosi: {e}")
+        print(f"❌ Jiddiy bot xatosi: {e}")
+        print("🚨 Bot qayta ishga tushirilmoqda...")
         import time
-        time.sleep(5)
-        bot.infinity_polling(none_stop=True, interval=0, timeout=60)
+        time.sleep(10)
+        # Restart the bot automatically
+        try:
+            bot.infinity_polling(none_stop=True, interval=1, timeout=20)
+        except Exception as restart_error:
+            print(f"❌ Qayta ishga tushirishda xatolik: {restart_error}")
+            sys.exit(1)
 
 if __name__ == "__main__":
     main()

@@ -27,3 +27,7 @@ args = "python main.py"
 [deployment]
 build = ["sh", "-c", "pip install pytelegrambotapi openpyxl trafilatura"]
 deploymentTarget = "gce"
+
+[[ports]]
+localPort = 8080
+externalPort = 80

@@ -1,0 +1,54 @@
+# Cloud Run deployment configuration for Telegram Bot
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  annotations:
+    run.googleapis.com/ingress: all
+    run.googleapis.com/execution-environment: gen2
+  name: telegram-task-bot
+spec:
+  template:
+    metadata:
+      annotations:
+        run.googleapis.com/execution-environment: gen2
+        run.googleapis.com/cpu-throttling: "false"
+        autoscaling.knative.dev/minScale: "1"
+        autoscaling.knative.dev/maxScale: "1"
+    spec:
+      containerConcurrency: 1
+      timeoutSeconds: 3600
+      containers:
+      - image: gcr.io/PROJECT_ID/telegram-task-bot
+        ports:
+        - containerPort: 8080
+        env:
+        - name: BOT_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: bot-token
+              key: token
+        - name: ADMIN_CODE
+          value: "1234"
+        - name: ADMIN_CHAT_ID
+          value: "7792775986"
+        - name: PORT
+          value: "8080"
+        resources:
+          limits:
+            cpu: 1000m
+            memory: 512Mi
+          requests:
+            cpu: 100m
+            memory: 128Mi
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 60
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 30
