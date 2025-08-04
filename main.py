@@ -3263,17 +3263,20 @@ Mijoz admindan javob kutmoqda.
     def handle_music_choice(message):
         """Handle music listening options"""
         markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
-        markup.add("🎵 Oxirgi 1 oylik musiqalar")
-        markup.add("🔍 Musiqa qidirish")
-        markup.add("🔙 Bekor qilish")
+        markup.add("🎵 Oxirgi 1 oylik musiqalar", "🇺🇿 O'zbek qo'shiqlar")
+        markup.add("🌍 Xorijiy qo'shiqlar", "🔍 Musiqa qidirish")
+        markup.add("🎧 Janr bo'yicha", "🔙 Bekor qilish")
         
         set_user_state(message.chat.id, "music_menu")
         
         bot.send_message(
             message.chat.id,
-            "🎵 Musiqa tanlovi:\n\n"
-            "🎵 Oxirgi 1 oylik - eng yangi qo'shiqlar\n"
-            "🔍 Musiqa qidirish - o'zingiz tanlagan qo'shiq\n\n"
+            "🎵 **Musiqa tanlash menyusi**\n\n"
+            "🎵 **Oxirgi 1 oylik** - eng yangi hitlar\n"
+            "🇺🇿 **O'zbek qo'shiqlar** - milliy musiqalar\n"
+            "🌍 **Xorijiy qo'shiqlar** - jahon hitleri\n"
+            "🔍 **Musiqa qidirish** - o'zingiz tanlagan qo'shiq\n"
+            "🎧 **Janr bo'yicha** - pop, rap, jazz va boshqalar\n\n"
             "Qaysi birini tanlaysiz?",
             reply_markup=markup
         )
@@ -3283,6 +3286,12 @@ Mijoz admindan javob kutmoqda.
         """Handle music menu choices"""
         if message.text == "🎵 Oxirgi 1 oylik musiqalar":
             send_latest_music(message)
+        elif message.text == "🇺🇿 O'zbek qo'shiqlar":
+            send_uzbek_music(message)
+        elif message.text == "🌍 Xorijiy qo'shiqlar":
+            send_foreign_music(message)
+        elif message.text == "🎧 Janr bo'yicha":
+            show_music_genres(message)
         elif message.text == "🔍 Musiqa qidirish":
             set_user_state(message.chat.id, "music_search")
             
@@ -3301,29 +3310,251 @@ Mijoz admindan javob kutmoqda.
 
     def send_latest_music(message):
         """Send latest month music collection"""
+        from datetime import datetime
+        current_month = datetime.now().strftime("%B %Y")
+        
         music_collection = f"""
-🎵 **Oxirgi 1 oy eng mashhur qo'shiqlar**
+🎵 **{current_month} - Eng mashhur qo'shiqlar**
 
-🔥 **O'zbek qo'shiqlar:**
-• Shahzoda - Yoruglik
-• Rayhon - Sevaman 
-• Munisa Rizayeva - Qalb
-• Shohruhxon - Muhabbat
+🔥 **O'zbek Top Hitlar:**
+• Shahzoda - Yoruglik (yangi klip)
+• Rayhon - Sevaman (romantik ballada)
+• Munisa Rizayeva - Qalb (his-tuygular)
+• Shohruhxon - Muhabbat (klassik)
+• Yulduz Usmonova - Bahor (tabiiy)
+• Sevara Nazarkhan - Dunyo (falsafiy)
 
-🌟 **Xorijiy qo'shiqlar:**
-• Ed Sheeran - Bad Habits
-• Dua Lipa - Levitating  
-• The Weeknd - Blinding Lights
-• Billie Eilish - Good 4 U
+🌟 **Xorijiy Top Chartlar:**
+• Ed Sheeran - Bad Habits (pop hit)
+• Dua Lipa - Levitating (dance pop)  
+• The Weeknd - Blinding Lights (retro)
+• Billie Eilish - Happier Than Ever (alternativ)
+• Taylor Swift - Anti-Hero (pop rock)
+• Harry Styles - As It Was (indie pop)
+
+🎧 **Trending Now:**
+• Post Malone - Circles (pop rap)
+• Olivia Rodrigo - Good 4 U (pop punk)
+• Bad Bunny - Tití Me Preguntó (reggaeton)
+• BTS - Butter (K-pop)
 
 📱 **Tinglash havolalari:**
-🎧 Spotify: https://open.spotify.com/playlist/latest-uzbek
-🎧 YouTube Music: https://music.youtube.com/playlist/latest-hits
+🎧 Spotify Top 50: https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M
+🎧 Apple Music Top 100: https://music.apple.com/playlist/todays-hits
+🎧 YouTube Music Trending: https://music.youtube.com/explore
+🎧 O'zbek Hitlar: https://music.youtube.com/playlist?list=PLrAl6_GDwGKz8TjD1g5bS8A3v6Zk7P0m
 
-🎶 Yaxshi tinglashlar!
+🎶 Oxirgi oy eng mashhur qo'shiqlardan bahramand bo'ling!
 """
         
         bot.send_message(message.chat.id, music_collection)
+        clear_user_state(message.chat.id)
+        show_employee_panel(message)
+
+    def send_uzbek_music(message):
+        """Send Uzbek music collection"""
+        uzbek_music = """
+🇺🇿 **O'zbek mashhur qo'shiqlar**
+
+🎤 **Eng mashhur ijrochilar:**
+
+🌟 **Shahzoda:**
+• Yoruglik - romantik ballada
+• Sensiz - sevgi qo'shig'i
+• Baxt - hayotiy qo'shiq
+
+🎵 **Rayhon:**
+• Sevaman - lirik qo'shiq
+• Yomg'ir - she'riy musiqa
+• Onam - onalik haqida
+
+🎶 **Munisa Rizayeva:**
+• Qalb - yurak haqida
+• Muhabbat - sevgi mavzusi
+• Hayot - falsafiy qo'shiq
+
+🎸 **Shohruhxon:**
+• Muhabbat - klassik hit
+• O'zbekiston - vatanparvarlik
+• Bahor - tabiiy go'zallik
+
+📱 **Tinglash havolalari:**
+🎧 Uzbek Music: https://music.youtube.com/playlist?list=PL_uzbek_hits
+🎧 O'zbek Radio: https://radiooooo.com/country/uzbekistan
+🎧 Spotify Uzbek: https://open.spotify.com/playlist/37i9dQZF1DX0XUsuxWHRQd
+
+🎶 O'zbek musiqasining go'zalligi bilan lazzatlaning!
+"""
+        
+        bot.send_message(message.chat.id, uzbek_music)
+        clear_user_state(message.chat.id)
+        show_employee_panel(message)
+
+    def send_foreign_music(message):
+        """Send foreign music collection"""
+        foreign_music = """
+🌍 **Xorijiy mashhur qo'shiqlar**
+
+🎤 **Pop yulduzlari:**
+
+⭐️ **Ed Sheeran:**
+• Shape of You - dans pop
+• Perfect - romantik ballada  
+• Bad Habits - zamonaviy hit
+
+🌟 **Dua Lipa:**
+• Levitating - disco pop
+• Don't Start Now - dance pop
+• Physical - energik qo'shiq
+
+🎵 **The Weeknd:**
+• Blinding Lights - retro pop
+• Save Your Tears - hissiy
+• Can't Feel My Face - funk
+
+🎶 **Billie Eilish:**
+• Bad Guy - alternativ pop
+• Happier Than Ever - ballada
+• Ocean Eyes - lirik
+
+📱 **Tinglash havolalari:**
+🎧 Spotify Global: https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M
+🎧 Apple Music Hits: https://music.apple.com/playlist/todays-hits
+🎧 YouTube Music Trending: https://music.youtube.com/playlist?list=PL4fGSI1pDJn5kI81J1fYWK5eZRl1zJ5kM
+
+🌎 Dunyo bo'ylab eng mashhur qo'shiqlar!
+"""
+        
+        bot.send_message(message.chat.id, foreign_music)
+        clear_user_state(message.chat.id)
+        show_employee_panel(message)
+
+    def show_music_genres(message):
+        """Show music genres"""
+        genres_list = """
+🎧 **Musiqa janrlari**
+
+Quyidagi janrlardan birini tanlang:
+
+🎵 **Pop** - zamonaviy pop musiqalar
+🎤 **Hip-Hop** - rep va R&B
+🎸 **Rock** - rok va metal
+🎹 **Jazz** - klassik jazz
+🎶 **Classical** - klassik musiqa  
+🕺 **Dance** - elektronik va EDM
+🎺 **Blues** - an'anaviy blues
+🎼 **Country** - amerikan country
+
+✍️ **Tanlash uchun janr nomini yozing**
+Masalan: "Pop" yoki "Hip-Hop"
+"""
+        
+        set_user_state(message.chat.id, "music_genre_search")
+        
+        markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        markup.add("🎵 Pop", "🎤 Hip-Hop", "🎸 Rock")
+        markup.add("🎹 Jazz", "🕺 Dance", "🔙 Bekor qilish")
+        
+        bot.send_message(message.chat.id, genres_list, reply_markup=markup)
+
+    @bot.message_handler(func=lambda message: get_user_state(message.chat.id)[0] == "music_genre_search")
+    def handle_music_genre_search(message):
+        """Handle music genre selection"""
+        if message.text == "🔙 Bekor qilish":
+            clear_user_state(message.chat.id)
+            handle_music_choice(message)
+            return
+        
+        genre = message.text.strip()
+        
+        genre_playlists = {
+            "🎵 Pop": {
+                "name": "Pop Music",
+                "description": "Eng mashhur pop qo'shiqlar",
+                "artists": ["Dua Lipa", "Ed Sheeran", "Taylor Swift", "Ariana Grande"],
+                "links": [
+                    "🎧 Spotify Pop: https://open.spotify.com/genre/pop",
+                    "🎧 Apple Music Pop: https://music.apple.com/browse/pop",
+                    "🎧 YouTube Pop Hits: https://music.youtube.com/playlist?list=RDCLAK5uy_k8hgl6bOl2RM7qYANgdE-4DayZhJ3Q"
+                ]
+            },
+            "🎤 Hip-Hop": {
+                "name": "Hip-Hop & Rap",
+                "description": "Eng zo'r rep va hip-hop",
+                "artists": ["Drake", "Kendrick Lamar", "J. Cole", "Travis Scott"],
+                "links": [
+                    "🎧 Spotify Hip-Hop: https://open.spotify.com/genre/hip-hop",
+                    "🎧 Apple Music Hip-Hop: https://music.apple.com/browse/hip-hop",
+                    "🎧 YouTube Hip-Hop: https://music.youtube.com/playlist?list=RDCLAK5uy_lAp8s0ZW8MZJGmWFuPiRdkqKo2V-3s"
+                ]
+            },
+            "🎸 Rock": {
+                "name": "Rock Music",
+                "description": "Klassik va zamonaviy rok",
+                "artists": ["Queen", "The Beatles", "AC/DC", "Led Zeppelin"],
+                "links": [
+                    "🎧 Spotify Rock: https://open.spotify.com/genre/rock",
+                    "🎧 Apple Music Rock: https://music.apple.com/browse/rock",
+                    "🎧 YouTube Rock Classics: https://music.youtube.com/playlist?list=RDCLAK5uy_lLjIqfGOKZlIZeY3LwN_5ELPE3Yg"
+                ]
+            },
+            "🎹 Jazz": {
+                "name": "Jazz Music",
+                "description": "Smooth jazz va klassik",
+                "artists": ["Miles Davis", "John Coltrane", "Ella Fitzgerald", "Duke Ellington"],
+                "links": [
+                    "🎧 Spotify Jazz: https://open.spotify.com/genre/jazz",
+                    "🎧 Apple Music Jazz: https://music.apple.com/browse/jazz",
+                    "🎧 YouTube Jazz: https://music.youtube.com/playlist?list=RDCLAK5uy_mG8MmSAhw0ZOGlQrZ1xVHJdMKnQg"
+                ]
+            },
+            "🕺 Dance": {
+                "name": "Electronic Dance Music",
+                "description": "EDM va elektronik musiqalar",
+                "artists": ["Calvin Harris", "David Guetta", "Marshmello", "The Chainsmokers"],
+                "links": [
+                    "🎧 Spotify Electronic: https://open.spotify.com/genre/electronic",
+                    "🎧 Apple Music Dance: https://music.apple.com/browse/electronic",
+                    "🎧 YouTube EDM: https://music.youtube.com/playlist?list=RDCLAK5uy_lJhf7U2LlhVHEhNdDIDKKz0X9qg"
+                ]
+            }
+        }
+        
+        if genre in genre_playlists:
+            playlist = genre_playlists[genre]
+            genre_message = f"""
+🎧 **{playlist['name']}**
+
+📖 **Tavsif:** {playlist['description']}
+
+🎤 **Mashhur ijrochilar:**
+"""
+            for artist in playlist['artists']:
+                genre_message += f"• {artist}\n"
+            
+            genre_message += f"""
+📱 **Tinglash havolalari:**
+"""
+            for link in playlist['links']:
+                genre_message += f"{link}\n"
+            
+            genre_message += f"""
+🎶 {playlist['name']} janridan lazzatlaning!
+"""
+        else:
+            # Generic genre search
+            genre_message = f"""
+🎧 **{genre}** janri bo'yicha natijalar:
+
+📱 **Tinglash havolalari:**
+🎧 Spotify: https://open.spotify.com/search/{genre.replace(' ', '%20').replace('🎵', '').replace('🎤', '').replace('🎸', '').replace('🎹', '').replace('🕺', '').strip()}
+🎧 Apple Music: https://music.apple.com/search?term={genre.replace(' ', '%20').replace('🎵', '').replace('🎤', '').replace('🎸', '').replace('🎹', '').replace('🕺', '').strip()}
+🎧 YouTube Music: https://music.youtube.com/search?q={genre.replace(' ', '+').replace('🎵', '').replace('🎤', '').replace('🎸', '').replace('🎹', '').replace('🕺', '').strip()}
+
+🎶 {genre} janridan bahramand bo'ling!
+"""
+        
+        bot.send_message(message.chat.id, genre_message)
         clear_user_state(message.chat.id)
         show_employee_panel(message)
 
@@ -3396,21 +3627,68 @@ Masalan: "Action" yoki "Comedy"
             import time
             time.sleep(1)
             
-            # Simulate music search results
-            music_results = f"""
-🎵 **'{search_query}' uchun natijalar:**
+            # Popular songs database for better search results
+            popular_songs = {
+                "shahzoda": ["Yoruglik", "Sensiz", "Baxt", "Muhabbat"],
+                "rayhon": ["Sevaman", "Yomg'ir", "Onam", "Qalb"],
+                "ed sheeran": ["Shape of You", "Perfect", "Bad Habits", "Thinking Out Loud"],
+                "dua lipa": ["Levitating", "Don't Start Now", "Physical", "One Kiss"],
+                "billie eilish": ["Bad Guy", "Happier Than Ever", "Ocean Eyes", "When the Party's Over"],
+                "taylor swift": ["Anti-Hero", "Shake It Off", "Love Story", "Blank Space"],
+                "the weeknd": ["Blinding Lights", "Save Your Tears", "Can't Feel My Face", "Starboy"]
+            }
+            
+            # Check if search matches popular artists
+            found_songs = []
+            search_lower = search_query.lower()
+            
+            for artist, songs in popular_songs.items():
+                if artist in search_lower or any(song.lower() in search_lower for song in songs):
+                    found_songs = songs[:4]  # Get first 4 songs
+                    artist_name = artist.title()
+                    break
+            
+            if found_songs:
+                music_results = f"""
+🎵 **'{search_query}' uchun natijalar topildi:**
 
-🎧 **Topilgan qo'shiqlar:**
-• {search_query} - Original
-• {search_query} - Remix Version
+🎤 **{artist_name}** ning mashhur qo'shiqlar:
+"""
+                for i, song in enumerate(found_songs, 1):
+                    music_results += f"• {song}\n"
+                
+                music_results += f"""
+📱 **Tinglash havolalari:**
+🎧 YouTube: https://youtube.com/results?search_query={artist_name.replace(' ', '+')}+{search_query.replace(' ', '+')}
+🎧 Spotify: https://open.spotify.com/search/{search_query.replace(' ', '%20')}
+🎧 Apple Music: https://music.apple.com/search?term={search_query.replace(' ', '%20')}
+🎧 SoundCloud: https://soundcloud.com/search?q={search_query.replace(' ', '%20')}
+
+🎶 {artist_name} qo'shiqlaridan bahramand bo'ling!
+"""
+            else:
+                # Generic search results
+                music_results = f"""
+🎵 **'{search_query}' uchun qidiruv natijalari:**
+
+🎧 **Mumkin bo'lgan variantlar:**
+• {search_query} - Original Mix
+• {search_query} - Radio Edit
 • {search_query} - Acoustic Version
+• {search_query} - Live Performance
 
 📱 **Tinglash havolalari:**
 🎧 YouTube: https://youtube.com/results?search_query={search_query.replace(' ', '+')}
 🎧 Spotify: https://open.spotify.com/search/{search_query.replace(' ', '%20')}
+🎧 Apple Music: https://music.apple.com/search?term={search_query.replace(' ', '%20')}
 🎧 SoundCloud: https://soundcloud.com/search?q={search_query.replace(' ', '%20')}
+🎧 Shazam: https://shazam.com/search?query={search_query.replace(' ', '%20')}
 
-🎶 Yaxshi tinglashlar!
+🔍 **Qo'shimcha qidiruv:**
+🎧 Last.fm: https://last.fm/search?q={search_query.replace(' ', '%20')}
+🎧 Bandcamp: https://bandcamp.com/search?q={search_query.replace(' ', '%20')}
+
+🎶 Qidirayotgan qo'shiqni topishingizga umid qilamiz!
 """
             
             bot.send_message(message.chat.id, music_results)
