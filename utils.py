@@ -49,9 +49,12 @@ def format_task_info(task: Tuple) -> str:
         "completed": "✅"
     }.get(status, "❓")
     
+    # Safe status formatting
+    status_text = status.title() if status else "Noma'lum"
+    
     task_text = f"""
 🆔 Vazifa ID: {task_id}
-{status_emoji} Holat: {status.title()}
+{status_emoji} Holat: {status_text}
 
 📝 Tavsif: {description}
 💰 To'lov: {f"{payment_amount:,.0f} so'm" if payment_amount else "Belgilanmagan"}
@@ -115,7 +118,7 @@ def generate_employee_report(employee_name: str, days: int = 30) -> Optional[str
          payment_amount, assigned_to, assigned_by, status, created_at,
          started_at, completed_at, completion_report, completion_media, received_amount) = task
         
-        total_payment += payment_amount
+        total_payment += payment_amount or 0
         total_received += received_amount or 0
         
         # Format dates
@@ -132,7 +135,7 @@ def generate_employee_report(employee_name: str, days: int = 30) -> Optional[str
         ws.append([
             task_id,
             description[:50] + ("..." if len(description) > 50 else ""),
-            payment_amount,
+            payment_amount or 0,
             received_amount or 0,
             created_formatted,
             completed_formatted,

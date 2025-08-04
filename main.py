@@ -1605,7 +1605,7 @@ Vazifani boshlash uchun "👤 Xodim" tugmasini bosing va vazifalar ro'yxatini ko
                 temp_data["task_id"],
                 "completed",
                 completion_report=temp_data["report"],
-                completion_media=temp_data.get("media"),
+                completion_media=temp_data.get("media") or "",
                 received_amount=received_amount
             )
             
@@ -1784,42 +1784,7 @@ Vazifani boshlash uchun "👤 Xodim" tugmasini bosing va vazifalar ro'yxatini ko
                 f"❌ Xatolik: {str(e)}"
             )
 
-    # Handle location sharing for tracking
-    def handle_location_sharing(message):
-        """Handle location sharing from employees"""
-        # Check if this is from an employee
-        employee_name = None
-        for name, chat_id in EMPLOYEES.items():
-            if chat_id == message.chat.id:
-                employee_name = name
-                break
-        
-        if employee_name:
-            # Send location to admin
-            try:
-                bot.send_message(
-                    ADMIN_CHAT_ID,
-                    f"📍 {employee_name} lokatsiyasi:"
-                )
-                bot.send_location(
-                    ADMIN_CHAT_ID,
-                    message.location.latitude,
-                    message.location.longitude
-                )
-                
-                # Confirm to employee
-                markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
-                markup.add("📌 Mening vazifalarim", "📂 Vazifalar tarixi")
-                markup.add("🔙 Ortga")
-                
-                bot.send_message(
-                    message.chat.id,
-                    "✅ Lokatsiya adminga yuborildi.",
-                    reply_markup=markup
-                )
-                
-            except Exception as e:
-                bot.send_message(message.chat.id, f"❌ Xatolik: {str(e)}")
+
 
     # COMMON HANDLERS
     @bot.message_handler(func=lambda message: message.text == "🔙 Ortga")

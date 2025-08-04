@@ -105,7 +105,7 @@ def add_task(description: str, location_lat: float, location_lon: float,
     task_id = cursor.lastrowid
     conn.commit()
     conn.close()
-    return task_id
+    return task_id or 0
 
 def get_employee_tasks(employee_name: str, status: str = None) -> List[Tuple]:
     """Get tasks for a specific employee"""
