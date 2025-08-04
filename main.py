@@ -4184,37 +4184,80 @@ Masalan: "Action" yoki "Comedy"
 
 🏪 **Mashhur zanjir restoranlar:**
 
-🍟 **Evos**
-📍 2.1 km - Amir Temur ko'chasi
-⭐️ 4.5/5 - Fast food, burger
+🍟 **EVOS**
+📍 Amir Temur ko'chasi 107A
+📍 Buyuk Ipak Yo'li 187
+📍 Yunusobod 4-mavze 12-uy
+📍 Chilonzor Qatortol ko'chasi 56
+⭐️ 4.5/5 - Fast food, burger, lavash
 📞 +998 71 200 05 05
 
-🥙 **Lavash**  
-📍 1.8 km - Buyuk Ipak Yo'li
-⭐️ 4.3/5 - Lavash, milliy taomlar
-📞 +998 71 202 40 40
-
-🍗 **Beshqozon**
-📍 3.2 km - Chilonzor tumani
-⭐️ 4.6/5 - Go'sht, kabob
-📞 +998 71 203 50 50
-
-🥘 **Oq Tepa**
-📍 2.7 km - Mirzo Ulugbek tumani
-⭐️ 4.4/5 - Milliy oshlar
-📞 +998 71 201 30 30
-
-🍕 **MaxWay**
-📍 1.5 km - Yunusobod tumani
-⭐️ 4.2/5 - Pizza, fast food
+🍕 **MAXWAY**
+📍 Chilonzor Qatortol ko'chasi 80
+📍 Yunusobod 4-mavze Bog'ishamol ko'chasi
+📍 Shayxontohur Nukus ko'chasi 52
+📍 Mirzo Ulug'bek Labzak ko'chasi 45
+⭐️ 4.4/5 - Pizza, burger, chicken
 📞 +998 71 205 15 15
 
+🍗 **BESHQOZON**
+📍 Chilonzor Qatortol ko'chasi 88
+📍 Yakkasaroy Bobur ko'chasi 12
+📍 Mirobod Oybek ko'chasi 35
+📍 Yashnobod Furqat ko'chasi 225
+⭐️ 4.6/5 - Kabob, manta, lag'mon
+📞 +998 71 203 50 50
+
+🥘 **OQ TEPA**
+📍 Mirzo Ulug'bek Labzak ko'chasi 55
+📍 Yunusobod 4-mavze 15-uy
+📍 Chilonzor Qatortol ko'chasi 112
+📍 Yakkasaroy A.Qodiriy ko'chasi 28
+⭐️ 4.4/5 - Milliy oshlar, palov
+📞 +998 71 201 30 30
+
+🥙 **LAVASH**
+📍 Buyuk Ipak Yo'li 187B
+📍 Amir Temur ko'chasi 125
+📍 Chilonzor Qatortol ko'chasi 75
+📍 Yunusobod Bog'ishamol ko'chasi 14
+⭐️ 4.3/5 - Lavash, shawarma
+📞 +998 71 202 40 40
+
+🥩 **BOTIR**
+📍 Shayxontohur Nukus ko'chasi 45
+📍 Mirzo Ulug'bek Labzak ko'chasi 67
+📍 Chilonzor Qatortol ko'chasi 95
+📍 Yunusobod 4-mavze 8-uy
+⭐️ 4.5/5 - Kabob, bifshteks
+📞 +998 71 204 60 60
+
+🍛 **ACHIQ OSH**
+📍 Olmazor Farobiy ko'chasi 125
+📍 Mirabad Oybek ko'chasi 58
+📍 Chilonzor Qatortol ko'chasi 145
+📍 Yakkasaroy Bobur ko'chasi 35
+⭐️ 4.7/5 - Milliy oshlar, palov
+📞 +998 71 206 70 70
+
 🍗 **KFC**
-📍 4.1 km - Tashkent City
-⭐️ 4.1/5 - Tovuq, fast food
+📍 Tashkent City, Amir Temur 15
+📍 Mega Planet, Buyuk Ipak Yo'li
+📍 Next, Labzak ko'chasi 404
+📍 Compass, Shota Rustaveli 62
+⭐️ 4.1/5 - Tovuq, kartoshka
 📞 +998 71 207 25 25
 
-🍽 Yaxshi ishtaha!
+🍽 **OLIM POLVON**
+📍 Chilonzor Qatortol ko'chasi 105
+📍 Mirzo Ulug'bek Labzak ko'chasi 88
+📍 Yunusobod 4-mavze 22-uy
+📍 Yakkasaroy A.Qodiriy ko'chasi 45
+⭐️ 4.8/5 - Palov, milliy taomlar
+📞 +998 71 208 80 80
+
+🍽 **Yaxshi ishtaha!**
+💡 Batafsil ma'lumot uchun restoranlarga qo'ng'iroq qiling.
 """
             
             bot.send_message(message.chat.id, restaurant_recommendations)
