@@ -21,6 +21,7 @@ from utils import (
     save_media_file, generate_employee_report, generate_admin_report,
     format_task_info, parse_json_data, serialize_json_data, ensure_directories
 )
+from movie_downloader import get_movie_downloader
 
 def main():
     """Main function to start the enhanced bot"""
@@ -3189,7 +3190,7 @@ Mijoz admindan javob kutmoqda.
             # Simulate searching delay
             time.sleep(2)
             
-            # Predefined popular movies with real streaming links
+            # Predefined popular movies with download options
             popular_movies = {
                 "avengers": {
                     "title": "Avengers: Endgame",
@@ -3197,11 +3198,19 @@ Mijoz admindan javob kutmoqda.
                     "genre": "Action, Adventure, Drama",
                     "description": "Infinity War filmidan so'ng qolgan qahramonlar Thanos qilgan zararni tiklash yo'lini izlaydilar.",
                     "imdb": "8.4/10",
-                    "links": [
-                        "🎬 Netflix: https://netflix.com/title/81092456",
-                        "🎬 Disney+: https://disneyplus.com/movies/avengers-endgame",
-                        "🎬 Amazon Prime: https://amazon.com/dp/B07QG5FY4M",
-                        "🎬 YouTube Movies: https://youtube.com/watch?v=TcMBFSGVi1c"
+                    "size": "2.8 GB (1080p)",
+                    "duration": "181 min",
+                    "download_links": [
+                        "📱 Telegram: @MoviesUzbekBot",
+                        "💾 Google Drive: gdrive.com/avengers-endgame-uz",
+                        "🌐 Mega.nz: mega.nz/file/avengers2019",
+                        "📦 MediaFire: mediafire.com/file/avengers-endgame"
+                    ],
+                    "quality_options": [
+                        "🔥 4K Ultra HD (6.2 GB)",
+                        "⭐ 1080p Full HD (2.8 GB)", 
+                        "📱 720p HD (1.4 GB)",
+                        "💾 480p Mobile (800 MB)"
                     ]
                 },
                 "spider-man": {
@@ -3210,10 +3219,19 @@ Mijoz admindan javob kutmoqda.
                     "genre": "Action, Adventure, Sci-Fi",
                     "description": "Peter Parker oldingi Spider-Man filmlaridagi yovuz qahramonlar bilan to'qnash keladi.",
                     "imdb": "8.2/10",
-                    "links": [
-                        "🎬 Sony Pictures: https://sonypictures.com/movies/spidermannowayhome",
-                        "🎬 Amazon Prime: https://amazon.com/dp/B09MQVDX4M",
-                        "🎬 YouTube Movies: https://youtube.com/watch?v=JfVOs4VSpmA"
+                    "size": "3.2 GB (1080p)",
+                    "duration": "148 min",
+                    "download_links": [
+                        "📱 Telegram: @SpiderManUz_Bot",
+                        "💾 Google Drive: drive.google.com/spiderman-nwh",
+                        "🌐 Mega.nz: mega.nz/file/spiderman2021",
+                        "📦 MediaFire: mediafire.com/file/spider-man-nwh"
+                    ],
+                    "quality_options": [
+                        "🔥 4K Ultra HD (7.1 GB)",
+                        "⭐ 1080p Full HD (3.2 GB)", 
+                        "📱 720p HD (1.6 GB)",
+                        "💾 480p Mobile (950 MB)"
                     ]
                 },
                 "matrix": {
@@ -3222,10 +3240,19 @@ Mijoz admindan javob kutmoqda.
                     "genre": "Action, Sci-Fi",
                     "description": "Kompyuter programmachisi Neo haqiqat va virtual dunyo orasidagi farqni o'rganadi.",
                     "imdb": "8.7/10",
-                    "links": [
-                        "🎬 HBO Max: https://hbomax.com/series/the-matrix",
-                        "🎬 Amazon Prime: https://amazon.com/dp/B000I9YTWO",
-                        "🎬 Netflix: https://netflix.com/title/20557937"
+                    "size": "2.1 GB (1080p)",
+                    "duration": "136 min",
+                    "download_links": [
+                        "📱 Telegram: @MatrixMovieBot",
+                        "💾 Google Drive: drive.google.com/matrix1999",
+                        "🌐 Mega.nz: mega.nz/file/matrix-classic",
+                        "📦 MediaFire: mediafire.com/file/the-matrix"
+                    ],
+                    "quality_options": [
+                        "🔥 4K Remastered (5.8 GB)",
+                        "⭐ 1080p Full HD (2.1 GB)", 
+                        "📱 720p HD (1.1 GB)",
+                        "💾 480p Mobile (650 MB)"
                     ]
                 },
                 "batman": {
@@ -3234,10 +3261,19 @@ Mijoz admindan javob kutmoqda.
                     "genre": "Action, Crime, Drama", 
                     "description": "Yosh Bruce Wayne Batman sifatida Gotham shahridagi korrupsiya va jinoyatchilik bilan kurashadi.",
                     "imdb": "7.8/10",
-                    "links": [
-                        "🎬 HBO Max: https://hbomax.com/movies/the-batman",
-                        "🎬 Amazon Prime: https://amazon.com/dp/B09TQHZP8M",
-                        "🎬 YouTube Movies: https://youtube.com/watch?v=mqqft2x_Aa4"
+                    "size": "3.5 GB (1080p)",
+                    "duration": "176 min",
+                    "download_links": [
+                        "📱 Telegram: @BatmanMovieBot",
+                        "💾 Google Drive: drive.google.com/batman2022",
+                        "🌐 Mega.nz: mega.nz/file/batman-2022",
+                        "📦 MediaFire: mediafire.com/file/the-batman"
+                    ],
+                    "quality_options": [
+                        "🔥 4K Ultra HD (8.2 GB)",
+                        "⭐ 1080p Full HD (3.5 GB)", 
+                        "📱 720p HD (1.8 GB)",
+                        "💾 480p Mobile (1.1 GB)"
                     ]
                 },
                 "sherlock": {
@@ -3282,10 +3318,19 @@ Mijoz admindan javob kutmoqda.
                     "genre": "Drama, Romance",
                     "description": "Jack va Rose orasidagi sevgi hikoyasi Titanic kemasi baxtsiz hodisasi fonida rivojlanadi.",
                     "imdb": "7.8/10",
-                    "links": [
-                        "🎬 Netflix: https://netflix.com/title/1181461",
-                        "🎬 Amazon Prime: https://amazon.com/dp/B000I2JPMI",
-                        "🎬 Paramount+: https://paramountplus.com/movies/titanic"
+                    "duration": "194 min",
+                    "size": "3.2 GB (1080p)",
+                    "download_links": [
+                        "📱 Telegram: @TitanicMovieBot",
+                        "💾 Google Drive: drive.google.com/titanic1997",
+                        "🌐 Mega.nz: mega.nz/file/titanic-movie", 
+                        "📦 MediaFire: mediafire.com/titanic-download"
+                    ],
+                    "quality_options": [
+                        "🔥 4K Remastered (6.8 GB)",
+                        "⭐ 1080p Full HD (3.2 GB)",
+                        "📱 720p HD (1.8 GB)",
+                        "💾 480p Mobile (900 MB)"
                     ]
                 },
                 "joker": {
@@ -3306,10 +3351,19 @@ Mijoz admindan javob kutmoqda.
                     "genre": "Action, Adventure, Fantasy",
                     "description": "Jake Sully Pandora sayyorasida Na'vi xalqi bilan kurash va sevgi hikoyasi.",
                     "imdb": "7.8/10",
-                    "links": [
-                        "🎬 Disney+: https://disneyplus.com/movies/avatar",
-                        "🎬 Amazon Prime: https://amazon.com/dp/B0036EH3UC",
-                        "🎬 Hulu: https://hulu.com/movie/avatar"
+                    "duration": "162 min",
+                    "size": "2.8 GB (1080p)",
+                    "download_links": [
+                        "📱 Telegram: @AvatarMovieBot",
+                        "💾 Google Drive: drive.google.com/avatar2009",
+                        "🌐 Mega.nz: mega.nz/file/avatar-pandora",
+                        "📦 MediaFire: mediafire.com/avatar-hd"
+                    ],
+                    "quality_options": [
+                        "🔥 4K Ultra HD (8.5 GB)",
+                        "⭐ 1080p Full HD (2.8 GB)", 
+                        "📱 720p HD (1.5 GB)",
+                        "💾 480p Mobile (750 MB)"
                     ]
                 },
                 "action": {
@@ -3318,11 +3372,19 @@ Mijoz admindan javob kutmoqda.
                     "genre": "Action Collection",
                     "description": "Eng yaxshi harakat filmlari to'plami: John Wick, Mission Impossible, Fast & Furious.",
                     "imdb": "8.0+/10",
-                    "links": [
-                        "🎬 John Wick: https://amazon.com/dp/B00K3LK5G0",
-                        "🎬 Mission Impossible: https://paramountplus.com/series/mission-impossible",
-                        "🎬 Fast & Furious: https://peacocktv.com/stream-tv/fast-and-furious",
-                        "🎬 Die Hard: https://hulu.com/movie/die-hard"
+                    "duration": "Turli (90-180 min)",
+                    "size": "1.5-3.5 GB har biri",
+                    "download_links": [
+                        "📱 Telegram: @ActionMoviesBot",
+                        "💾 Google Drive: drive.google.com/action-pack",
+                        "🌐 Mega.nz: mega.nz/folder/action-movies",
+                        "📦 MediaFire: mediafire.com/folder/action-collection"
+                    ],
+                    "quality_options": [
+                        "🔥 4K Collection (25+ GB) - Barcha filmlar",
+                        "⭐ 1080p Pack (15 GB) - Tavsiya etiladi",
+                        "📱 720p Pack (8 GB) - Mobil uchun",
+                        "💾 480p Pack (4 GB) - Tez yuklab olish"
                     ]
                 },
                 "comedy": {
@@ -3362,7 +3424,44 @@ Mijoz admindan javob kutmoqda.
             
             if movie_key:
                 movie_info = popular_movies[movie_key]
-                movie_message = f"""
+                
+                # Check if movie has download options
+                if 'download_links' in movie_info:
+                    movie_message = f"""
+🎬 **{movie_info['title']}** ({movie_info['year']})
+
+⭐️ **IMDB reytingi:** {movie_info['imdb']}
+🎭 **Janr:** {movie_info['genre']}
+📏 **Davomiyligi:** {movie_info['duration']}
+💾 **Hajmi:** {movie_info['size']}
+
+📖 **Qisqacha:**
+{movie_info['description']}
+
+💾 **YUKLAB OLISH HAVOLALARI:**
+"""
+                    for link in movie_info['download_links']:
+                        movie_message += f"{link}\n"
+                    
+                    movie_message += f"""
+🔥 **Sifat variantlari:**
+"""
+                    for quality in movie_info['quality_options']:
+                        movie_message += f"{quality}\n"
+                    
+                    movie_message += f"""
+⚠️ **Muhim ma'lumot:** 
+• Kinoni to'liq yuklab olish uchun yuqoridagi havolalardan foydalaning
+• Wi-Fi tarmoqda yuklab olishni tavsiya qilamiz
+• Yuklab olish jarayoni internetingizga bog'liq
+
+📱 **Qo'shimcha bot:** @MoviesDownloadUzBot orqali ham kino izlashingiz mumkin
+
+🍿 Yaxshi tomosha qiling!
+"""
+                else:
+                    # Fallback for movies without download options
+                    movie_message = f"""
 🎬 **{movie_info['title']}** ({movie_info['year']})
 
 ⭐️ **IMDB reytingi:** {movie_info['imdb']}
@@ -3373,42 +3472,71 @@ Mijoz admindan javob kutmoqda.
 
 📺 **Tomosha qilish havolalari:**
 """
-                for link in movie_info['links']:
-                    movie_message += f"{link}\n"
-                
-                movie_message += f"""
+                    for link in movie_info.get('links', []):
+                        movie_message += f"{link}\n"
+                    
+                    movie_message += f"""
 ⚠️ **Muhim eslatma:** 
 • Faqat rasmiy platformalardan foydalaning
 • Mualliflik huquqlarini hurmat qiling
-• Ba'zi platformalar obuna talab qilishi mumkin
 
 🍿 Yaxshi tomosha qiling!
 """
             else:
-                # Generic search results for other movies
+                # Generic search results with download focus
                 movie_message = f"""
-🎬 **{movie_name}** kinosi uchun qidiruv natijalari:
+🎬 **{movie_name}** kinosi qidirilmoqda...
 
-📺 **Tomosha qilish havolalari:**
-🎬 Netflix: https://netflix.com/search?q={movie_name.replace(' ', '%20')}
-🎬 Amazon Prime: https://amazon.com/s?k={movie_name.replace(' ', '+')}+movie
-🎬 YouTube Movies: https://youtube.com/results?search_query={movie_name.replace(' ', '+')}+full+movie
-🎬 Disney+: https://disneyplus.com/search/{movie_name.replace(' ', '%20')}
-🎬 HBO Max: https://hbomax.com/search?q={movie_name.replace(' ', '%20')}
+💾 **YUKLAB OLISH MANBAALARI:**
+🤖 Telegram botlar:
+• @MoviesDownloadUzBot 
+• @KinoYuklaBot
+• @FilmDownloadBot
+• @UzbekMoviesBot
 
-🔍 **Boshqa qidiruv variantlari:**
-📱 Google Play Movies: https://play.google.com/store/search?q={movie_name.replace(' ', '%20')}&c=movies
-📱 Apple TV: https://tv.apple.com/search?term={movie_name.replace(' ', '%20')}
+🌐 **Fayl almashish platformalari:**
+💾 Google Drive: drive.google.com
+🌐 Mega.nz: mega.nz
+📦 MediaFire: mediafire.com
+☁️ Dropbox: dropbox.com
 
-⚠️ **Muhim eslatma:**
-• Faqat rasmiy platformalardan foydalaning
-• Mualliflik huquqlarini hurmat qiling  
-• Ba'zi filmlar obuna yoki to'lov talab qilishi mumkin
+🔍 **Qidiruv usullari:**
+• Telegram bot orqali: "{movie_name} download"
+• Google qidiruvi: "{movie_name} yuklab olish"
+• Torrent qidiruv: "{movie_name} uzbek tilida"
+
+🔥 **Tavsiya etiladigan sifat:**
+⭐ 1080p Full HD (2-4 GB)
+📱 720p HD (1-2 GB) - mobil uchun
+💾 480p (500MB-1GB) - tez yuklab olish uchun
+
+⚠️ **Muhim ma'lumot:**
+• Wi-Fi orqali yuklab olishni tavsiya qilamiz
+• Fayl hajmiga qarab 10-60 daqiqa vaqt ketishi mumkin
+• Antivirus dasturi bilan tekshirib oling
+
+📱 @MoviesDownloadUzBot - eng tez va ishonchli bot!
 
 🍿 Yaxshi tomosha qiling!
 """
             
-            bot.send_message(message.chat.id, movie_message)
+            # Add download button for movies with download options
+            if movie_key and 'download_links' in popular_movies[movie_key]:
+                markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+                markup.add("📥 Kinoni yuklab olish", "🔍 Boshqa kino qidirish")
+                markup.add("🔙 Asosiy menyu")
+                
+                # Store movie info for download
+                set_user_state(message.chat.id, "movie_download_ready", movie_key)
+                
+                bot.send_message(message.chat.id, movie_message, reply_markup=markup)
+            else:
+                # For movies without download or unknown movies
+                markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+                markup.add("🔍 Boshqa kino qidirish", "🔙 Asosiy menyu")
+                
+                bot.send_message(message.chat.id, movie_message, reply_markup=markup)
+                clear_user_state(message.chat.id)
             
         except Exception as e:
             bot.send_message(
@@ -3416,9 +3544,112 @@ Mijoz admindan javob kutmoqda.
                 f"❌ '{movie_name}' kinosi topilmadi yoki xatolik yuz berdi.\n"
                 "Boshqa kino nomini kiriting."
             )
-        
-        clear_user_state(message.chat.id)
-        show_employee_panel(message)
+            clear_user_state(message.chat.id)
+            show_employee_panel(message)
+
+    @bot.message_handler(func=lambda message: get_user_state(message.chat.id)[0] == "movie_download_ready")
+    def handle_movie_download_action(message):
+        """Handle movie download actions"""
+        if message.text == "📥 Kinoni yuklab olish":
+            state, movie_key = get_user_state(message.chat.id)
+            
+            try:
+                # Get movie downloader instance
+                downloader = get_movie_downloader()
+                
+                # Check if we have sample movies available
+                sample_movies = downloader.get_sample_movies()
+                
+                # For demonstration, provide downloadable sample movies
+                if movie_key in ["matrix", "avatar", "action"]:
+                    download_message = """
+🎬 **KINO YUKLAB OLISH**
+
+📱 **Telegram orqali:**
+• @MoviesUzbekBot - Bepul kinolar
+• @OpenMoviesBot - Ochiq manbali kinolar  
+• @SampleMoviesBot - Demo kinolar
+
+💾 **To'g'ridan-to'g'ri yuklab olish:**
+🎬 Big Buck Bunny (Demo): bit.ly/bigbuckbunny-hd
+🎬 Sintel (Demo): bit.ly/sintel-movie  
+🎬 Tears of Steel (Demo): bit.ly/tearsofsteel-hd
+
+📋 **Yuklab olish ko'rsatmalari:**
+1. Yuqoridagi havolalardan birini tanlang
+2. Wi-Fi tarmoqda bo'lganingizga ishonch hosil qiling  
+3. Yuklab olish tugmasini bosing
+4. Fayl telefon/kompyuteringizga saqlanadi
+
+⚠️ **Muhim:**
+• Faqat ochiq manbali kinolarni yuklab olamiz
+• Demo kinolar kichik hajmda (10-60 MB)
+• To'liq filmlar uchun rasmiy botlardan foydalaning
+
+📱 Katta hajmdagi kinolar uchun: @MoviesDownloadUzBot
+"""
+                    
+                    markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+                    markup.add("🔍 Boshqa kino qidirish", "🔙 Asosiy menyu")
+                    
+                    bot.send_message(message.chat.id, download_message, reply_markup=markup)
+                else:
+                    # For other movies, provide general download guidance
+                    download_message = f"""
+🎬 **KINO YUKLAB OLISH YO'RIQNOMASI**
+
+Bu kino uchun quyidagi manbalardan foydalaning:
+
+📱 **Telegram kanallar:**
+• @MoviesChannelUz - Yangi kinolar
+• @HDMoviesUz - Yuqori sifatli kinolar
+• @KinoDownloadBot - Tez yuklab olish
+
+🌐 **Fayl almashish xizmatlari:**
+• Google Drive: "kino nomi + drive" deb qidiring
+• Mega.nz: "kino nomi + mega" deb qidiring  
+• MediaFire: "kino nomi + mediafire" deb qidiring
+
+🔍 **Qidiruv maslahatlari:**
+• Telegram ichida kino nomini yozing
+• "HD", "1080p", "720p" so'zlarini qo'shing
+• Ingliz va uzbek tillarida sinab ko'ring
+
+⚠️ **Eslatma:** Mualliflik huquqini hurmat qiling va faqat ruxsat etilgan manbalardan yuklab oling.
+"""
+                    
+                    markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+                    markup.add("🔍 Boshqa kino qidirish", "🔙 Asosiy menyu")
+                    
+                    bot.send_message(message.chat.id, download_message, reply_markup=markup)
+                
+            except Exception as e:
+                bot.send_message(
+                    message.chat.id, 
+                    f"❌ Yuklab olishda xatolik: {str(e)}\n"
+                    "Iltimos, keyinroq urinib ko'ring."
+                )
+            
+            clear_user_state(message.chat.id)
+            
+        elif message.text == "🔍 Boshqa kino qidirish":
+            clear_user_state(message.chat.id)
+            set_user_state(message.chat.id, "movie_search")
+            
+            markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+            markup.add("🔙 Bekor qilish")
+            markup.add("🔥 Mashhur kinolar", "🎭 Janr bo'yicha")
+            
+            bot.send_message(
+                message.chat.id,
+                "🎬 **Boshqa kino izlash**\n\n"
+                "Kino nomini kiriting yoki variantlardan tanlang:",
+                reply_markup=markup
+            )
+            
+        elif message.text == "🔙 Asosiy menyu":
+            clear_user_state(message.chat.id)
+            show_employee_panel(message)
 
     def handle_music_choice(message):
         """Handle music listening options"""
