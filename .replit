@@ -23,3 +23,7 @@ author = "agent"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "python main.py"
+
+[deployment]
+build = ["sh", "-c", "pip install pytelegrambotapi openpyxl trafilatura"]
+deploymentTarget = "gce"
