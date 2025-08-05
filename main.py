@@ -22,7 +22,7 @@ from utils import (
     save_media_file, generate_employee_report, generate_admin_report,
     format_task_info, parse_json_data, serialize_json_data, ensure_directories
 )
-# Entertainment system removed per user request
+# Return to employee panel after task completion
 
 def main():
     """Main function to start the enhanced bot"""
@@ -3349,8 +3349,8 @@ Rahmat!
 """
             bot.send_message(message.chat.id, success_msg)
             
-            # Entertainment system removed per user request
-            # Entertainment system removed
+            # Return to employee panel after task completion
+            # Task completed successfully
             
             # Admin notification
             admin_message = f"""
@@ -3415,8 +3415,8 @@ Rahmat!
 """
             bot.send_message(message.chat.id, success_msg)
             
-            # Entertainment system removed per user request
-            # Entertainment system removed
+            # Return to employee panel after task completion
+            # Task completed successfully
             
             # Admin notification
             admin_message = f"""
@@ -3544,8 +3544,8 @@ Qarz ma'lumotlari saqlandi. Rahmat!
 """
             bot.send_message(message.chat.id, success_msg)
             
-            # Entertainment system removed per user request
-            # Entertainment system removed
+            # Return to employee panel after task completion
+            # Task completed successfully
             
             # Admin notification with full debt details
             admin_message = f"""
