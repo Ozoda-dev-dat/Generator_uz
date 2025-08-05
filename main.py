@@ -174,11 +174,12 @@ def main():
         
         # Handle admin task assignment location
         if state == "assign_task_location":
-            print(f"DEBUG: Processing admin task location assignment")
+            print(f"DEBUG: Processing admin task location assignment for {message.chat.id}")
             
             # Ensure admin_data exists for this user
             if message.chat.id not in admin_data:
                 admin_data[message.chat.id] = {}
+                print(f"DEBUG: Created new admin_data for {message.chat.id}")
             
             admin_data[message.chat.id]["location"] = {
                 "latitude": message.location.latitude,
@@ -186,6 +187,13 @@ def main():
             }
             
             print(f"DEBUG: Location saved - lat: {message.location.latitude}, lon: {message.location.longitude}")
+            print(f"DEBUG: Current admin_data: {admin_data.get(message.chat.id, {})}")
+            
+            # Send location confirmation first
+            bot.send_message(
+                message.chat.id,
+                f"✅ Lokatsiya qabul qilindi!\n📍 Koordinatalar: {message.location.latitude:.6f}, {message.location.longitude:.6f}"
+            )
             
             # Show animated location card for task assignment (if function exists)
             try:
@@ -196,10 +204,14 @@ def main():
                     message.location.longitude,
                     "task_location"
                 )
+                print("DEBUG: Animated location card sent")
             except NameError:
                 print("DEBUG: send_animated_location_card function not found, skipping")
+            except Exception as e:
+                print(f"DEBUG: Error sending location card: {e}")
             
             set_user_state(message.chat.id, "assign_task_payment")
+            print(f"DEBUG: State changed to assign_task_payment for {message.chat.id}")
             
             markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
             markup.add("💰 To'lov miqdorini kiriting")
@@ -208,7 +220,7 @@ def main():
             
             bot.send_message(
                 message.chat.id,
-                "✅ Vazifa lokatsiyasi belgilandi!\n\n💰 To'lov miqdorini tanlang:",
+                "💰 To'lov miqdorini tanlang:",
                 reply_markup=markup
             )
             print(f"DEBUG: Payment buttons sent to {message.chat.id}")
@@ -493,6 +505,8 @@ def main():
     @bot.message_handler(func=lambda message: get_user_state(message.chat.id)[0] == "assign_task_description")
     def get_task_description(message):
         """Get task description"""
+        print(f"DEBUG: Task description received from {message.chat.id}: {message.text}")
+        
         # Ensure admin_data exists for this user
         if message.chat.id not in admin_data:
             admin_data[message.chat.id] = {}
@@ -500,15 +514,19 @@ def main():
         admin_data[message.chat.id]["description"] = message.text
         set_user_state(message.chat.id, "assign_task_location")
         
+        print(f"DEBUG: State set to assign_task_location for {message.chat.id}")
+        
         markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
         location_btn = types.KeyboardButton("📍 Lokatsiyani yuborish", request_location=True)
         markup.add(location_btn)
+        markup.add("🔙 Bekor qilish")  # Add cancel option
         
         bot.send_message(
             message.chat.id,
             "📍 Vazifa uchun lokatsiyani yuboring:",
             reply_markup=markup
         )
+        print(f"DEBUG: Location request sent to {message.chat.id}")
 
 
 
