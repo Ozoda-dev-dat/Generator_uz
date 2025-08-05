@@ -4102,7 +4102,11 @@ Bu joyni quyidagi xizmatlar orqali o'rganishingiz mumkin:
         while True:
             try:
                 print("🔄 Bot doimiy ishlash rejimida...")
-                bot.infinity_polling(none_stop=True, interval=1, timeout=20, long_polling_timeout=60)
+                # Clear any existing webhook first
+                bot.remove_webhook()
+                import time
+                time.sleep(2)
+                bot.infinity_polling(none_stop=True, interval=3, timeout=30, long_polling_timeout=90)
             except Exception as e:
                 print(f"⚠️ Bot ulanishida xatolik: {e}")
                 # Send notification about restart
@@ -4124,6 +4128,7 @@ Bu joyni quyidagi xizmatlar orqali o'rganishingiz mumkin:
     except KeyboardInterrupt:
         print("\n⚠️ Manual shutdown initiated...")
         try:
+            import time
             bot.send_message(
                 ADMIN_CHAT_ID,
                 "⚠️ Bot o'chish rejimiga o'tmoqda!\n\n"
