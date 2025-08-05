@@ -128,6 +128,16 @@ def main():
                 message.chat.id,
                 "❌ Bekor qilindi. Yana kerak bo'lsa /contact yozing."
             )
+            
+            # Check if user is an employee and redirect to employee panel  
+            employee_name = None
+            for name, chat_id in EMPLOYEES.items():
+                if chat_id == message.chat.id:
+                    employee_name = name
+                    break
+            
+            if employee_name:
+                show_employee_panel(message, employee_name)
 
     @bot.message_handler(content_types=['contact'])
     def handle_customer_contact(message):
@@ -202,6 +212,16 @@ def main():
                 message.chat.id,
                 "❌ Bekor qilindi. Yana kerak bo'lsa /contact yozing."
             )
+            
+            # Check if user is an employee and redirect to employee panel
+            employee_name = None
+            for name, chat_id in EMPLOYEES.items():
+                if chat_id == message.chat.id:
+                    employee_name = name
+                    break
+            
+            if employee_name:
+                show_employee_panel(message, employee_name)
             return
         
         if message.text in ["📞 Telefon raqamni ulashish", "📍 Joylashuvni ulashish"]:
@@ -303,6 +323,20 @@ def main():
             )
         
         clear_user_state(message.chat.id)
+        
+        # Check if user is an employee and redirect to employee panel
+        employee_name = None
+        for name, chat_id in EMPLOYEES.items():
+            if chat_id == message.chat.id:
+                employee_name = name
+                break
+        
+        if employee_name:
+            # User is an employee, show employee panel
+            show_employee_panel(message, employee_name)
+        else:
+            # User is a customer, show start menu
+            start_message(message)
 
     @bot.message_handler(commands=['start'])
     def start_message(message):
@@ -2252,12 +2286,14 @@ Vazifani boshlash uchun "👤 Xodim" tugmasini bosing va vazifalar ro'yxatini ko
                 conn.commit()
                 conn.close()
                 
-                # Confirm to employee
+                # Confirm to employee and show main menu
                 bot.send_message(
                     message.chat.id,
-                    "✅ Lokatsiya qabul qilindi. Rahmat!",
-                    reply_markup=types.ReplyKeyboardRemove()
+                    "✅ Lokatsiya qabul qilindi. Rahmat!"
                 )
+                
+                # Show employee panel after location sharing
+                show_employee_panel(message, employee_name)
                 
                 # Notify admin with location details
                 maps_url = f"https://maps.google.com/?q={message.location.latitude},{message.location.longitude}"
