@@ -62,6 +62,12 @@ Task completion flow: Employees should return to main menu (employee panel) afte
 - **Database Schema Extension**: New `customer_inquiries` table with comprehensive customer data tracking
 - **Customer Commands**: `/contact`, `/sorov`, `/murojaat` commands for easy customer access
 - **Location and Contact Integration**: Full support for customer location sharing and contact information
+- **Admin Panel Integration**: "👥 Mijozlar so'rovlari" button in admin panel with submenus:
+  - `🌐 Website dan kelgan so'rovlar` - View and respond to website inquiries
+  - `🤖 Botdan kelgan so'rovlar` - View and respond to bot inquiries
+  - `📋 Barcha so'rovlar` - View all inquiries from both sources
+  - `📊 So'rovlar statistikasi` - Inquiry statistics and analytics
+- **Dual Workflow System**: Bot runs on default workflow, Website API runs on port 8080 separately
 
 # External Dependencies
 
