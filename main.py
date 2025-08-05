@@ -169,6 +169,7 @@ def main():
     @bot.message_handler(content_types=['location'])
     def handle_all_location(message):
         """Handle all location sharing - customer, admin task assignment, employee"""
+        print(f"URGENT DEBUG: Location handler called! Chat ID: {message.chat.id}")
         state, data = get_user_state(message.chat.id)
         print(f"DEBUG: Location received from {message.chat.id}, current state: {state}")
         
