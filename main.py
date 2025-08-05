@@ -420,20 +420,36 @@ def main():
             bot.send_message(message.chat.id, "❌ Noto'g'ri kod. Qaytadan urinib ko'ring:")
 
     def show_admin_panel(message):
-        """Show admin panel"""
+        """Show admin panel with quick action floating buttons"""
+        # Create floating action button layout with intuitive icons
         markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
-        markup.add("➕ Yangi xodim qo'shish", "📤 Vazifa berish")
-        markup.add("📍 Xodimlarni kuzatish", "👥 Mijozlar so'rovlari")
-        markup.add("💸 Qarzlar", "📊 Ma'lumotlar")
-        markup.add("🔙 Ortga")
         
+        # Top row - Primary quick actions
+        markup.add("⚡ Vazifa berish", "👀 Xodim kuzatuvi")
+        
+        # Second row - Management actions  
+        markup.add("👤 Xodim qo'shish", "💬 Mijoz so'rovlari")
+        
+        # Third row - Data & Analytics
+        markup.add("💰 Qarzlar", "📈 Hisobotlar")
+        
+        # Bottom row - Navigation
+        markup.add("🔄 Yangilash", "🔙 Ortga")
+        
+        # Send with enhanced message
         bot.send_message(
             message.chat.id,
-            "🛠 Admin paneli\n\nKerakli bo'limni tanlang:",
-            reply_markup=markup
+            "🎯 **Admin Boshqaruv Paneli**\n\n"
+            "⚡ Tezkor amallar uchun tugmalarni bosing:\n"
+            "• Vazifa berish va kuzatish\n"
+            "• Xodim boshqaruvi\n"
+            "• Mijoz xizmatlar\n"
+            "• Moliyaviy hisobotlar",
+            reply_markup=markup,
+            parse_mode='Markdown'
         )
 
-    @bot.message_handler(func=lambda message: message.text == "📤 Vazifa berish")
+    @bot.message_handler(func=lambda message: message.text == "⚡ Vazifa berish")
     def start_task_assignment(message):
         """Start task assignment process"""
         if len(EMPLOYEES) == 0:
@@ -603,7 +619,7 @@ Vazifani boshlash uchun "👤 Xodim" tugmasini bosing va vazifalar ro'yxatini ko
         else:
             bot.send_message(message.chat.id, "❌ Iltimos, ro'yxatdan xodim tanlang!")
 
-    @bot.message_handler(func=lambda message: message.text == "📊 Ma'lumotlar")
+    @bot.message_handler(func=lambda message: message.text == "📈 Hisobotlar")
     def show_data_menu(message):
         """Show comprehensive data management menu"""
         if message.chat.id != ADMIN_CHAT_ID:
@@ -651,7 +667,7 @@ Vazifani boshlash uchun "👤 Xodim" tugmasini bosing va vazifalar ro'yxatini ko
         except Exception as e:
             bot.send_message(message.chat.id, f"❌ Xatolik: {str(e)}")
 
-    @bot.message_handler(func=lambda message: message.text == "💸 Qarzlar")
+    @bot.message_handler(func=lambda message: message.text == "💰 Qarzlar")
     def show_debts_menu(message):
         """Show debts menu"""
         if message.chat.id != ADMIN_CHAT_ID:
@@ -664,7 +680,7 @@ Vazifani boshlash uchun "👤 Xodim" tugmasini bosing va vazifalar ro'yxatini ko
         
         bot.send_message(
             message.chat.id,
-            "💸 Qarzlar bo'limi:\n\nKerakli amalni tanlang:",
+            "💰 Qarzlar bo'limi:\n\nKerakli amalni tanlang:",
             reply_markup=markup
         )
 
@@ -708,7 +724,7 @@ Vazifani boshlash uchun "👤 Xodim" tugmasini bosing va vazifalar ro'yxatini ko
         except Exception as e:
             bot.send_message(message.chat.id, f"❌ Xatolik: {str(e)}")
 
-    @bot.message_handler(func=lambda message: message.text == "➕ Yangi xodim qo'shish")  
+    @bot.message_handler(func=lambda message: message.text == "👤 Xodim qo'shish")  
     def start_add_employee(message):
         """Start adding new employee process"""
         if message.chat.id != ADMIN_CHAT_ID:
@@ -724,7 +740,7 @@ Vazifani boshlash uchun "👤 Xodim" tugmasini bosing va vazifalar ro'yxatini ko
             reply_markup=markup
         )
     
-    @bot.message_handler(func=lambda message: message.text == "👥 Mijozlar so'rovlari")
+    @bot.message_handler(func=lambda message: message.text == "💬 Mijoz so'rovlari")
     def show_customer_requests(message):
         """Show customer requests menu"""
         if message.chat.id != ADMIN_CHAT_ID:
@@ -1737,7 +1753,7 @@ Vazifani boshlash uchun "👤 Xodim" tugmasini bosing va vazifalar ro'yxatini ko
 📊 Barcha ma'lumotlar statistikasi
 
 📝 Vazifalar: {tasks_count}
-💸 Qarzlar: {debts_count}
+💰 Qarzlar: {debts_count}
 💬 Xabarlar: {messages_count}
 👥 Xodimlar: {len(EMPLOYEES)}
 🔄 Faol sessiyalar: {states_count}
@@ -1879,7 +1895,7 @@ Vazifani boshlash uchun "👤 Xodim" tugmasini bosing va vazifalar ro'yxatini ko
         
         markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
         markup.add("📝 Vazifalar import", "👤 Xodimlar import")
-        markup.add("💸 Qarzlar import", "📋 Template yuklab olish")
+        markup.add("💰 Qarzlar import", "📋 Template yuklab olish")
         markup.add("🔙 Bekor qilish")
         
         bot.send_message(
@@ -2095,7 +2111,7 @@ Vazifani boshlash uchun "👤 Xodim" tugmasini bosing va vazifalar ro'yxatini ko
         show_data_menu(message)
 
     # EMPLOYEE TRACKING HANDLERS
-    @bot.message_handler(func=lambda message: message.text == "📍 Xodimlarni kuzatish")
+    @bot.message_handler(func=lambda message: message.text == "👀 Xodim kuzatuvi")
     def start_employee_tracking(message):
         """Start employee tracking process"""
         if message.chat.id != ADMIN_CHAT_ID:
@@ -2390,7 +2406,7 @@ Vazifani boshlash uchun "👤 Xodim" tugmasini bosing va vazifalar ro'yxatini ko
             bot.send_message(message.chat.id, "❌ Tushunmadim. Iltimos, menyudan tanlang yoki /start bosing.")
 
     def show_employee_panel(message, employee_name=None):
-        """Show employee panel"""
+        """Show employee panel with quick action floating buttons"""
         if not employee_name:
             # Reload config to get latest employee list
             import importlib
@@ -2406,18 +2422,37 @@ Vazifani boshlash uchun "👤 Xodim" tugmasini bosing va vazifalar ro'yxatini ko
             bot.send_message(message.chat.id, "❌ Profil topilmadi.")
             return
         
-        markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
-        markup.add("📌 Mening vazifalarim", "📂 Vazifalar tarixi")
-        markup.add("📊 Hisobotlar", "🎊 Ko'ngilochar")
-        markup.add("🔙 Ortga")
+        # Create floating action button layout with intuitive icons
+        markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
         
+        # Top row - Primary work actions
+        markup.add("🎯 Vazifalarim", "⚡ Lokatsiya yuborish")
+        
+        # Second row - History and reports
+        markup.add("📋 Tarix", "📊 Hisobotim")
+        
+        # Third row - Entertainment after work
+        markup.add("🎬 Kino", "🎵 Musiqa")
+        markup.add("📰 Yangiliklar")
+        
+        # Bottom row - Navigation
+        markup.add("🔄 Yangilash", "🔙 Ortga")
+        
+        # Send with enhanced message
         bot.send_message(
             message.chat.id,
-            f"👤 Xodim paneli\n\nSalom, {employee_name}!\n\nKerakli bo'limni tanlang:",
-            reply_markup=markup
+            f"🚀 **Xodim Ish Paneli**\n\n"
+            f"Salom, **{employee_name}**! 👋\n\n"
+            f"⚡ Tezkor amallar:\n"
+            f"• 🎯 Vazifalarni ko'rish va boshlash\n"
+            f"• ⚡ Joylashuvni admin ga yuborish\n"
+            f"• 📊 Shaxsiy hisobotlar\n"
+            f"• 🎊 Ko'ngilochar (vazifa bajarib bo'lgach)",
+            reply_markup=markup,
+            parse_mode='Markdown'
         )
 
-    @bot.message_handler(func=lambda message: message.text == "📌 Mening vazifalarim")
+    @bot.message_handler(func=lambda message: message.text == "🎯 Vazifalarim")
     def show_employee_tasks(message):
         """Show employee's current tasks"""
         employee_name = None
@@ -2460,7 +2495,7 @@ Vazifani boshlash uchun "👤 Xodim" tugmasini bosing va vazifalar ro'yxatini ko
                 
                 bot.send_message(message.chat.id, task_info, reply_markup=markup)
 
-    @bot.message_handler(func=lambda message: message.text == "📂 Vazifalar tarixi")
+    @bot.message_handler(func=lambda message: message.text == "📋 Tarix")
     def show_employee_task_history(message):
         """Show employee's task history with interactive options"""
         employee_name = None
@@ -2638,9 +2673,54 @@ Vazifani boshlash uchun "👤 Xodim" tugmasini bosing va vazifalar ro'yxatini ko
         clear_user_state(message.chat.id)
         show_employee_panel(message)
 
-    @bot.message_handler(func=lambda message: message.text == "🎊 Ko'ngilochar")
-    def show_entertainment_for_employee(message):
-        """Show entertainment menu for employees"""
+    # Quick action handlers for floating buttons
+    @bot.message_handler(func=lambda message: message.text == "⚡ Lokatsiya yuborish")
+    def quick_location_share(message):
+        """Quick location sharing for employees"""
+        employee_name = None
+        for name, chat_id in EMPLOYEES.items():
+            if chat_id == message.chat.id:
+                employee_name = name
+                break
+        
+        if not employee_name:
+            bot.send_message(message.chat.id, "❌ Xodim profili topilmadi.")
+            return
+        
+        # Request location
+        markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        location_btn = types.KeyboardButton("📍 Joylashuvni yuborish", request_location=True)
+        markup.add(location_btn)
+        markup.add("🔙 Ortga")
+        
+        set_user_state(message.chat.id, "sharing_location")
+        
+        bot.send_message(
+            message.chat.id,
+            f"📍 **Tezkor Lokatsiya Xizmati**\n\n"
+            f"Salom {employee_name}! Admin uchun joylashuvingizni yuboring.\n\n"
+            f"⚡ Tugmani bosib lokatsiyangizni ulashing:",
+            reply_markup=markup,
+            parse_mode='Markdown'
+        )
+    
+    @bot.message_handler(func=lambda message: message.text == "🔄 Yangilash")
+    def refresh_panel(message):
+        """Refresh current panel"""
+        # Check if user is admin
+        if message.chat.id == ADMIN_CHAT_ID:
+            show_admin_panel(message)
+            bot.send_message(message.chat.id, "🔄 Admin paneli yangilandi!")
+        # Check if user is employee
+        elif message.chat.id in EMPLOYEES.values():
+            show_employee_panel(message)
+            bot.send_message(message.chat.id, "🔄 Xodim paneli yangilandi!")
+        else:
+            start_message(message)
+
+    @bot.message_handler(func=lambda message: message.text in ["🎬 Kino", "🎵 Musiqa", "📰 Yangiliklar"])
+    def quick_entertainment_access(message):
+        """Quick access to entertainment via floating buttons"""
         employee_name = None
         for name, chat_id in EMPLOYEES.items():
             if chat_id == message.chat.id:
@@ -2651,38 +2731,75 @@ Vazifani boshlash uchun "👤 Xodim" tugmasini bosing va vazifalar ro'yxatini ko
             bot.send_message(message.chat.id, "❌ Profil topilmadi.")
             return
         
-        # Direct access to entertainment without completing a task
-        import random
-        
-        motivational_messages = [
-            "🎉 Salom! Ko'ngilochar bo'limiga xush kelibsiz!",
-            "⭐️ Dam olish vaqti! Nima qilishni xohlaysiz?",
-            "🌟 Ko'ngilochar tanlang va rohatlaning!",
-            "💫 Ajoyib! Qiziqarli kontentga xush kelibsiz!"
-        ]
-        
-        motivation_msg = random.choice(motivational_messages)
-        
-        markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
-        markup.add("🎬 Kino ko'rish", "🎵 Musiqa tinglash")
-        markup.add("📰 Yangiliklar")
-        markup.add("🔙 Asosiy menyu")
-        
-        set_user_state(message.chat.id, "entertainment_menu")
-        
-        bot.send_message(
-            message.chat.id,
-            f"{motivation_msg}\n\n"
-            "🎊 Ko'ngilochar bo'limiga xush kelibsiz!\n\n"
-            "🎬 Kino - yangi filmlarni tomosha qiling\n"
-            "🎵 Musiqa - eng so'nggi qo'shiqlarni tinglang\n"
-            "📰 Yangiliklar - bugungi eng muhim xabarlar\n"
-            "🔙 Asosiy menyu - bosh sahifaga qaytish\n\n"
-            "Nima qilishni xohlaysiz?",
-            reply_markup=markup
-        )
+        # Direct access to specific entertainment based on button pressed
+        if message.text == "🎬 Kino":
+            bot.send_message(
+                message.chat.id,
+                f"🎬 **Kino Ko'rish Xizmati**\n\n"
+                f"Salom {employee_name}! Eng mashhur kinolarni ko'ring:",
+                parse_mode='Markdown'
+            )
+            show_popular_movies(message)
+            
+        elif message.text == "🎵 Musiqa":
+            bot.send_message(
+                message.chat.id,
+                f"🎵 **Musiqa Tinglash Xizmati**\n\n"
+                f"Salom {employee_name}! Eng yaxshi musiqalarni tinglang:",
+                parse_mode='Markdown'
+            )
+            show_music_menu(message)
+            
+        elif message.text == "📰 Yangiliklar":
+            bot.send_message(
+                message.chat.id,
+                f"📰 **Bugungi Yangiliklar**\n\n"
+                f"Salom {employee_name}! Eng so'nggi yangiliklarni o'qing:",
+                parse_mode='Markdown'
+            )
+            get_daily_news(message)
 
-    @bot.message_handler(func=lambda message: message.text == "📊 Hisobotlar")
+    # Location sharing handler for quick action
+    @bot.message_handler(content_types=['location'])
+    def handle_quick_location_sharing(message):
+        """Handle location sharing from quick action button"""
+        state, data = get_user_state(message.chat.id)
+        
+        if state == "sharing_location":
+            employee_name = None
+            for name, chat_id in EMPLOYEES.items():
+                if chat_id == message.chat.id:
+                    employee_name = name
+                    break
+            
+            if employee_name:
+                # Clear state
+                clear_user_state(message.chat.id)
+                
+                # Notify employee
+                bot.send_message(
+                    message.chat.id,
+                    "✅ Lokatsiya muvaffaqiyatli yuborildi!\n"
+                    "📍 Admin sizning joylashuvingizni oldi."
+                )
+                
+                # Return to employee panel
+                show_employee_panel(message, employee_name)
+                
+                # Notify admin with location details
+                maps_url = f"https://maps.google.com/?q={message.location.latitude},{message.location.longitude}"
+                
+                bot.send_message(
+                    ADMIN_CHAT_ID,
+                    f"⚡ **Tezkor Lokatsiya** - {employee_name}\n\n"
+                    f"📍 Koordinatalar: {message.location.latitude:.6f}, {message.location.longitude:.6f}\n"
+                    f"🗺 Google Maps: {maps_url}\n"
+                    f"🕐 Vaqt: {datetime.now().strftime('%d.%m.%Y %H:%M')}\n"
+                    f"📲 Tezkor yuborish orqali",
+                    parse_mode='Markdown'
+                )
+
+    @bot.message_handler(func=lambda message: message.text == "📊 Hisobotim")
     def show_employee_reports_menu(message):
         """Show employee reports menu"""
         employee_name = None

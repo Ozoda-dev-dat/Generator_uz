@@ -49,6 +49,16 @@ Task completion flow: Employees should return to main menu (employee panel) afte
 
 ## Recent Changes (August 5, 2025)
 
+### Quick Action Floating Button System (August 5, 2025)
+- **Intuitive Icon-Based Interface**: Redesigned admin and employee panels with floating action buttons featuring prominent visual icons
+- **Admin Quick Actions**: ⚡ Vazifa berish, 👀 Xodim kuzatuvi, 👤 Xodim qo'shish, 💬 Mijoz so'rovlari, 💰 Qarzlar, 📈 Hisobotlar
+- **Employee Quick Actions**: 🎯 Vazifalarim, ⚡ Lokatsiya yuborish, 📋 Tarix, 📊 Hisobotim, 🎬 Kino, 🎵 Musiqa, 📰 Yangiliklar
+- **Tezkor Lokatsiya Xizmati**: One-touch location sharing for employees with immediate admin notification
+- **Direct Entertainment Access**: Floating buttons for instant access to movies, music, and news without task completion requirement
+- **Enhanced Visual Organization**: Row-width optimization and enhanced message formatting with Markdown support
+- **Panel Refresh System**: 🔄 Yangilash button for quick panel updates
+- **Improved User Experience**: Better button organization, clearer instructions, and professional interface design
+
 ### Enhanced Customer Inquiry System
 - **Comprehensive Customer Support**: Complete customer inquiry management system with website and Telegram integration
 - **Dual-Source Inquiries**: Separate handling for website (`source='website'`) and Telegram bot (`source='telegram'`) inquiries
