@@ -170,22 +170,34 @@ def main():
     def handle_all_location(message):
         """Handle all location sharing - customer, admin task assignment, employee"""
         state, data = get_user_state(message.chat.id)
+        print(f"DEBUG: Location received from {message.chat.id}, current state: {state}")
         
         # Handle admin task assignment location
         if state == "assign_task_location":
+            print(f"DEBUG: Processing admin task location assignment")
+            
+            # Ensure admin_data exists for this user
+            if message.chat.id not in admin_data:
+                admin_data[message.chat.id] = {}
+            
             admin_data[message.chat.id]["location"] = {
                 "latitude": message.location.latitude,
                 "longitude": message.location.longitude
             }
             
-            # Show animated location card for task assignment
-            send_animated_location_card(
-                message.chat.id,
-                "Admin (Vazifa)",
-                message.location.latitude,
-                message.location.longitude,
-                "task_location"
-            )
+            print(f"DEBUG: Location saved - lat: {message.location.latitude}, lon: {message.location.longitude}")
+            
+            # Show animated location card for task assignment (if function exists)
+            try:
+                send_animated_location_card(
+                    message.chat.id,
+                    "Admin (Vazifa)",
+                    message.location.latitude,
+                    message.location.longitude,
+                    "task_location"
+                )
+            except NameError:
+                print("DEBUG: send_animated_location_card function not found, skipping")
             
             set_user_state(message.chat.id, "assign_task_payment")
             
