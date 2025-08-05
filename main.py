@@ -237,11 +237,8 @@ def main():
     
     def handle_employee_location_data(message):
         """Handle employee location sharing during task completion"""
-        # This will be implemented when employee location tracking is needed
-        bot.send_message(
-            message.chat.id,
-            "✅ Lokatsiya qabul qilindi!"
-        )
+        # Use the main location sharing handler which includes employee panel redirect
+        handle_location_sharing(message)
 
     @bot.message_handler(func=lambda message: get_user_state(message.chat.id)[0] in ["writing_inquiry", "customer_contact_saved", "customer_location_saved"])
     def handle_customer_inquiry(message):
