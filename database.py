@@ -71,6 +71,27 @@ def init_database():
         )
     """)
     
+    # Customer inquiries table for website and bot requests
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS customer_inquiries (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            customer_name TEXT NOT NULL,
+            customer_phone TEXT,
+            customer_username TEXT,
+            chat_id INTEGER,
+            inquiry_text TEXT NOT NULL,
+            inquiry_type TEXT DEFAULT 'bot',
+            location_lat REAL,
+            location_lon REAL,
+            location_address TEXT,
+            status TEXT DEFAULT 'pending',
+            admin_response TEXT,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            responded_at TEXT,
+            source TEXT DEFAULT 'telegram'
+        )
+    """)
+    
     # Employee locations table for tracking
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS employee_locations (
@@ -285,6 +306,81 @@ def get_task_statistics() -> Dict[str, Any]:
         "total_payments": total_payments,
         "total_debts": total_debts
     }
+
+def add_customer_inquiry(customer_name: str, inquiry_text: str, customer_phone: str = None, 
+                        customer_username: str = None, chat_id: int = None, location_lat: float = None, 
+                        location_lon: float = None, location_address: str = None, 
+                        inquiry_type: str = 'bot', source: str = 'telegram') -> int:
+    """Add a new customer inquiry"""
+    conn = sqlite3.connect(DATABASE_PATH)
+    cursor = conn.cursor()
+    cursor.execute("""
+        INSERT INTO customer_inquiries 
+        (customer_name, customer_phone, customer_username, chat_id, inquiry_text, 
+         inquiry_type, location_lat, location_lon, location_address, source)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """, (customer_name, customer_phone, customer_username, chat_id, inquiry_text,
+          inquiry_type, location_lat, location_lon, location_address, source))
+    inquiry_id = cursor.lastrowid
+    conn.commit()
+    conn.close()
+    return inquiry_id
+
+def get_customer_inquiries(status: str = None, source: str = None) -> List[Tuple]:
+    """Get customer inquiries with optional filtering"""
+    conn = sqlite3.connect(DATABASE_PATH)
+    cursor = conn.cursor()
+    
+    query = "SELECT * FROM customer_inquiries"
+    params = []
+    conditions = []
+    
+    if status:
+        conditions.append("status = ?")
+        params.append(status)
+    
+    if source:
+        conditions.append("source = ?")
+        params.append(source)
+    
+    if conditions:
+        query += " WHERE " + " AND ".join(conditions)
+    
+    query += " ORDER BY created_at DESC"
+    
+    cursor.execute(query, params)
+    inquiries = cursor.fetchall()
+    conn.close()
+    return inquiries
+
+def respond_to_inquiry(inquiry_id: int, admin_response: str) -> Optional[Tuple]:
+    """Add admin response to customer inquiry"""
+    conn = sqlite3.connect(DATABASE_PATH)
+    cursor = conn.cursor()
+    cursor.execute("""
+        UPDATE customer_inquiries 
+        SET admin_response = ?, status = 'responded', responded_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+    """, (admin_response, inquiry_id))
+    conn.commit()
+    
+    # Get inquiry details for notification
+    cursor.execute("""
+        SELECT customer_name, chat_id, inquiry_text, customer_phone, source
+        FROM customer_inquiries WHERE id = ?
+    """, (inquiry_id,))
+    inquiry_details = cursor.fetchone()
+    conn.close()
+    return inquiry_details
+
+def get_inquiry_by_id(inquiry_id: int) -> Optional[Tuple]:
+    """Get specific inquiry by ID"""
+    conn = sqlite3.connect(DATABASE_PATH)
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM customer_inquiries WHERE id = ?", (inquiry_id,))
+    inquiry = cursor.fetchone()
+    conn.close()
+    return inquiry
 
 # Initialize database on import
 if not os.path.exists(DATABASE_PATH):

@@ -47,6 +47,22 @@ Task completion flow: Employees should return to main menu (employee panel) afte
 - **Media Handling**: Secure file download, storage, and admin forwarding capabilities
 - **Data Serialization**: JSON-based complex data storage for conversation states
 
+## Recent Changes (August 5, 2025)
+
+### Enhanced Customer Inquiry System
+- **Comprehensive Customer Support**: Complete customer inquiry management system with website and Telegram integration
+- **Dual-Source Inquiries**: Separate handling for website (`source='website'`) and Telegram bot (`source='telegram'`) inquiries
+- **Customer Contact Flow**: Multi-step customer contact process with phone sharing, location sharing, and inquiry submission
+- **Admin Response System**: Full admin interface for viewing, managing, and responding to customer inquiries
+- **Website API Integration**: RESTful API (`website_api.py`) for website integration with endpoints:
+  - `POST /api/submit_inquiry` - Submit customer inquiries from website
+  - `GET /api/inquiry_status/{id}` - Check inquiry status
+  - `GET /api/health` - API health check
+- **Real-time Notifications**: Automatic admin notifications for new inquiries from both sources
+- **Database Schema Extension**: New `customer_inquiries` table with comprehensive customer data tracking
+- **Customer Commands**: `/contact`, `/sorov`, `/murojaat` commands for easy customer access
+- **Location and Contact Integration**: Full support for customer location sharing and contact information
+
 # External Dependencies
 
 ## Core Libraries

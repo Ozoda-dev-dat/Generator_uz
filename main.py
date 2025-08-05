@@ -15,7 +15,8 @@ from datetime import datetime, timedelta
 from config import BOT_TOKEN, ADMIN_CODE, ADMIN_CHAT_ID, EMPLOYEES
 from database import (
     init_database, add_task, get_employee_tasks, update_task_status, add_debt, get_debts,
-    add_message, get_user_state, set_user_state, clear_user_state
+    add_message, get_user_state, set_user_state, clear_user_state,
+    add_customer_inquiry, get_customer_inquiries, respond_to_inquiry, get_inquiry_by_id
 )
 from utils import (
     save_media_file, generate_employee_report, generate_admin_report,
@@ -44,6 +45,264 @@ def main():
     
     # Global variables for conversation states
     admin_data = {}
+
+    @bot.message_handler(commands=['contact', 'sorov', 'murojaat'])
+    def customer_contact(message):
+        """Handle customer contact requests"""
+        # Skip if user is admin or employee
+        if message.chat.id == ADMIN_CHAT_ID or message.chat.id in EMPLOYEES.values():
+            bot.send_message(
+                message.chat.id,
+                "Admin va xodimlar uchun bu komanda mo'ljallangan emas. /start ni ishlating."
+            )
+            return
+        
+        markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        markup.add("📞 Telefon raqamni ulashish", "📍 Joylashuvni ulashish")
+        markup.add("💬 So'rov yuborish", "🔙 Bekor qilish")
+        
+        set_user_state(message.chat.id, "customer_contact_start")
+        
+        bot.send_message(
+            message.chat.id,
+            "👋 Assalomu alaykum!\n\n"
+            "Biz bilan bog'langaningizdan xursandmiz. So'rovingizni to'liq ko'rib chiqishimiz uchun:\n\n"
+            "1️⃣ Telefon raqamingizni ulashing\n"
+            "2️⃣ Joylashuvingizni ulashing\n"
+            "3️⃣ So'rovingizni yozing\n\n"
+            "Qaysi bosqichdan boshlaysiz?",
+            reply_markup=markup
+        )
+
+    @bot.message_handler(func=lambda message: get_user_state(message.chat.id)[0] == "customer_contact_start")
+    def handle_customer_contact_start(message):
+        """Handle customer contact start options"""
+        if message.text == "📞 Telefon raqamni ulashish":
+            markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+            contact_button = types.KeyboardButton("📞 Telefon raqamni ulashish", request_contact=True)
+            markup.add(contact_button)
+            markup.add("🔙 Bekor qilish")
+            
+            set_user_state(message.chat.id, "waiting_for_contact")
+            
+            bot.send_message(
+                message.chat.id,
+                "📞 Telefon raqamingizni ulash uchun pastdagi tugmani bosing:",
+                reply_markup=markup
+            )
+            
+        elif message.text == "📍 Joylashuvni ulashish":
+            markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+            location_button = types.KeyboardButton("📍 Joylashuvni ulashish", request_location=True)
+            markup.add(location_button)
+            markup.add("🔙 Bekor qilish")
+            
+            set_user_state(message.chat.id, "waiting_for_location")
+            
+            bot.send_message(
+                message.chat.id,
+                "📍 Joylashuvingizni ulash uchun pastdagi tugmani bosing:",
+                reply_markup=markup
+            )
+            
+        elif message.text == "💬 So'rov yuborish":
+            set_user_state(message.chat.id, "writing_inquiry")
+            
+            markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+            markup.add("🔙 Bekor qilish")
+            
+            bot.send_message(
+                message.chat.id,
+                "💬 So'rovingizni yozing:\n\n"
+                "Masalan:\n"
+                "- Xizmat haqida ma'lumot olish\n"
+                "- Narxlar haqida savol\n"
+                "- Shikoyat yoki taklif\n"
+                "- Boshqa savollar",
+                reply_markup=markup
+            )
+            
+        elif message.text == "🔙 Bekor qilish":
+            clear_user_state(message.chat.id)
+            bot.send_message(
+                message.chat.id,
+                "❌ Bekor qilindi. Yana kerak bo'lsa /contact yozing."
+            )
+
+    @bot.message_handler(content_types=['contact'])
+    def handle_customer_contact(message):
+        """Handle customer contact sharing"""
+        if get_user_state(message.chat.id)[0] != "waiting_for_contact":
+            return
+        
+        # Store contact info
+        customer_data = {
+            'phone': message.contact.phone_number,
+            'name': message.contact.first_name + (' ' + message.contact.last_name if message.contact.last_name else ''),
+            'username': message.from_user.username
+        }
+        
+        set_user_state(message.chat.id, "customer_contact_saved", json.dumps(customer_data))
+        
+        markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        location_button = types.KeyboardButton("📍 Joylashuvni ulashish", request_location=True)
+        markup.add(location_button)
+        markup.add("💬 So'rov yuborish", "🔙 Bekor qilish")
+        
+        bot.send_message(
+            message.chat.id,
+            f"✅ Telefon raqam saqlandi: {message.contact.phone_number}\n\n"
+            "Endi joylashuvingizni ham ulashing (ixtiyoriy):",
+            reply_markup=markup
+        )
+
+    @bot.message_handler(content_types=['location'])
+    def handle_customer_location(message):
+        """Handle customer location sharing"""
+        state, data = get_user_state(message.chat.id)
+        
+        if state not in ["waiting_for_location", "customer_contact_saved"]:
+            return
+        
+        # Get existing customer data or create new
+        if data:
+            customer_data = json.loads(data)
+        else:
+            customer_data = {
+                'name': message.from_user.first_name + (' ' + message.from_user.last_name if message.from_user.last_name else ''),
+                'username': message.from_user.username
+            }
+        
+        # Add location data
+        customer_data['location_lat'] = message.location.latitude
+        customer_data['location_lon'] = message.location.longitude
+        
+        set_user_state(message.chat.id, "customer_location_saved", json.dumps(customer_data))
+        
+        markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        markup.add("💬 So'rov yuborish")
+        if 'phone' not in customer_data:
+            contact_button = types.KeyboardButton("📞 Telefon raqamni ulashish", request_contact=True)
+            markup.add(contact_button)
+        markup.add("🔙 Bekor qilish")
+        
+        bot.send_message(
+            message.chat.id,
+            "✅ Joylashuv saqlandi!\n\n"
+            "Endi so'rovingizni yozing:",
+            reply_markup=markup
+        )
+
+    @bot.message_handler(func=lambda message: get_user_state(message.chat.id)[0] in ["writing_inquiry", "customer_contact_saved", "customer_location_saved"])
+    def handle_customer_inquiry(message):
+        """Handle customer inquiry text"""
+        if message.text == "🔙 Bekor qilish":
+            clear_user_state(message.chat.id)
+            bot.send_message(
+                message.chat.id,
+                "❌ Bekor qilindi. Yana kerak bo'lsa /contact yozing."
+            )
+            return
+        
+        if message.text in ["📞 Telefon raqamni ulashish", "📍 Joylashuvni ulashish"]:
+            # Handle these separately
+            handle_customer_contact_start(message)
+            return
+        
+        if message.text == "💬 So'rov yuborish":
+            set_user_state(message.chat.id, "writing_inquiry_final")
+            markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+            markup.add("🔙 Bekor qilish")
+            
+            bot.send_message(
+                message.chat.id,
+                "💬 So'rovingizni batafsil yozing:",
+                reply_markup=markup
+            )
+            return
+        
+        # This is the inquiry text
+        state, data = get_user_state(message.chat.id)
+        
+        # Get customer data
+        if data:
+            customer_data = json.loads(data)
+        else:
+            customer_data = {
+                'name': message.from_user.first_name + (' ' + message.from_user.last_name if message.from_user.last_name else ''),
+                'username': message.from_user.username
+            }
+        
+        try:
+            # Save inquiry to database
+            inquiry_id = add_customer_inquiry(
+                customer_name=customer_data.get('name', 'Mijoz'),
+                customer_phone=customer_data.get('phone'),
+                customer_username=customer_data.get('username'),
+                chat_id=message.chat.id,
+                inquiry_text=message.text,
+                location_lat=customer_data.get('location_lat'),
+                location_lon=customer_data.get('location_lon'),
+                inquiry_type='customer_request',
+                source='telegram'
+            )
+            
+            # Send confirmation to customer
+            bot.send_message(
+                message.chat.id,
+                f"✅ **So'rovingiz qabul qilindi!**\n\n"
+                f"📋 So'rov raqami: #{inquiry_id}\n"
+                f"👤 Ism: {customer_data.get('name', 'Mijoz')}\n"
+                f"📞 Telefon: {customer_data.get('phone', 'Kiritilmagan')}\n"
+                f"💬 So'rov: {message.text}\n\n"
+                f"🕐 Tez orada javob beramiz!\n"
+                f"📞 Shoshilinch hollar uchun: +998 xx xxx xx xx"
+            )
+            
+            # Notify admin
+            if ADMIN_CHAT_ID:
+                admin_message = f"""
+🔔 **YANGI MIJOZ SO'ROVI**
+
+📋 So'rov ID: #{inquiry_id}
+👤 Mijoz: {customer_data.get('name', 'Mijoz')}
+📞 Telefon: {customer_data.get('phone', 'Kiritilmagan')}
+👤 Username: @{customer_data.get('username', 'mavjud emas')}
+📱 Chat ID: {message.chat.id}
+
+💬 **So'rov:**
+{message.text}
+
+📅 Vaqt: {datetime.now().strftime('%Y-%m-%d %H:%M')}
+
+💡 Javob berish: 👥 Mijozlar so'rovlari → 🤖 Botdan kelgan so'rovlar
+"""
+                
+                try:
+                    bot.send_message(ADMIN_CHAT_ID, admin_message)
+                    
+                    # Send location if available
+                    if customer_data.get('location_lat') and customer_data.get('location_lon'):
+                        bot.send_location(
+                            ADMIN_CHAT_ID, 
+                            customer_data['location_lat'], 
+                            customer_data['location_lon']
+                        )
+                        bot.send_message(
+                            ADMIN_CHAT_ID,
+                            f"📍 Mijoz joylashuvi (So'rov #{inquiry_id})"
+                        )
+                except Exception as admin_error:
+                    print(f"Admin notification error: {admin_error}")
+            
+        except Exception as e:
+            bot.send_message(
+                message.chat.id,
+                f"❌ So'rovni saqlashda xatolik yuz berdi. Iltimos, qayta urinib ko'ring.\n"
+                f"Xatolik: {str(e)}"
+            )
+        
+        clear_user_state(message.chat.id)
 
     @bot.message_handler(commands=['start'])
     def start_message(message):
@@ -430,16 +689,290 @@ Vazifani boshlash uchun "👤 Xodim" tugmasini bosing va vazifalar ro'yxatini ko
             return
             
         markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
-        markup.add("📋 Faol suhbatlar", "📋 Mijozning So'rovlari")
-        markup.add("📊 Mijozlar statistikasi", "🔙 Ortga")
+        markup.add("🌐 Website dan kelgan so'rovlar", "🤖 Botdan kelgan so'rovlar")
+        markup.add("📋 Barcha so'rovlar", "📊 So'rovlar statistikasi")
+        markup.add("🔙 Ortga")
+        
+        # Get inquiry counts
+        try:
+            website_inquiries = len(get_customer_inquiries(source='website'))
+            bot_inquiries = len(get_customer_inquiries(source='telegram'))
+            pending_inquiries = len(get_customer_inquiries(status='pending'))
+        except:
+            website_inquiries = bot_inquiries = pending_inquiries = 0
         
         bot.send_message(
             message.chat.id,
-            "👥 Mijozlar so'rovlari bo'limi\n\n"
-            "Mijozlar bilan ishlash uchun kerakli variantni tanlang:\n\n"
-            "💡 Mijozga javob berish: /reply [chat_id] [xabar]",
+            f"👥 **Mijozlar so'rovlari bo'limi**\n\n"
+            f"🌐 Website so'rovlari: {website_inquiries} ta\n"
+            f"🤖 Bot so'rovlari: {bot_inquiries} ta\n"
+            f"⏳ Javob kutayotgan: {pending_inquiries} ta\n\n"
+            f"Kerakli bo'limni tanlang:",
             reply_markup=markup
         )
+
+    @bot.message_handler(func=lambda message: message.text == "🌐 Website dan kelgan so'rovlar")
+    def show_website_inquiries(message):
+        """Show website inquiries"""
+        if message.chat.id != ADMIN_CHAT_ID:
+            return
+        
+        try:
+            inquiries = get_customer_inquiries(source='website')
+            
+            if not inquiries:
+                bot.send_message(
+                    message.chat.id,
+                    "🌐 **Website so'rovlari**\n\n"
+                    "Hozircha website dan so'rov kelmagan.\n\n"
+                    "Website integrasiyasi orqali mijozlar so'rovlari bu yerda ko'rinadi."
+                )
+                return
+            
+            markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+            response_text = "🌐 **Website dan kelgan so'rovlar:**\n\n"
+            
+            for inquiry in inquiries[:10]:  # Show first 10
+                inquiry_id, customer_name, customer_phone, customer_username, chat_id, inquiry_text, inquiry_type, location_lat, location_lon, location_address, status, admin_response, created_at, responded_at, source = inquiry
+                
+                status_emoji = "⏳" if status == "pending" else "✅"
+                response_text += f"{status_emoji} **ID{inquiry_id}** - {customer_name}\n"
+                response_text += f"📧 {inquiry_text[:50]}{'...' if len(inquiry_text) > 50 else ''}\n"
+                response_text += f"📅 {created_at}\n\n"
+                
+                markup.add(f"📋 ID{inquiry_id} - Ko'rish va javob berish")
+            
+            markup.add("🔄 Yangilash", "🔙 Ortga")
+            
+            bot.send_message(message.chat.id, response_text, reply_markup=markup)
+            
+        except Exception as e:
+            bot.send_message(message.chat.id, f"❌ Xatolik: {str(e)}")
+
+    @bot.message_handler(func=lambda message: message.text == "🤖 Botdan kelgan so'rovlar")
+    def show_bot_inquiries(message):
+        """Show bot inquiries"""
+        if message.chat.id != ADMIN_CHAT_ID:
+            return
+        
+        try:
+            inquiries = get_customer_inquiries(source='telegram')
+            
+            if not inquiries:
+                bot.send_message(
+                    message.chat.id,
+                    "🤖 **Bot so'rovlari**\n\n"
+                    "Hozircha bot orqali so'rov kelmagan.\n\n"
+                    "Mijozlar botga yozganda ularning so'rovlari bu yerda ko'rinadi."
+                )
+                return
+            
+            markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+            response_text = "🤖 **Botdan kelgan so'rovlar:**\n\n"
+            
+            for inquiry in inquiries[:10]:  # Show first 10
+                inquiry_id, customer_name, customer_phone, customer_username, chat_id, inquiry_text, inquiry_type, location_lat, location_lon, location_address, status, admin_response, created_at, responded_at, source = inquiry
+                
+                status_emoji = "⏳" if status == "pending" else "✅"
+                response_text += f"{status_emoji} **ID{inquiry_id}** - {customer_name}\n"
+                if customer_username:
+                    response_text += f"👤 @{customer_username}\n"
+                response_text += f"📧 {inquiry_text[:50]}{'...' if len(inquiry_text) > 50 else ''}\n"
+                response_text += f"📅 {created_at}\n\n"
+                
+                markup.add(f"📋 ID{inquiry_id} - Ko'rish va javob berish")
+            
+            markup.add("🔄 Yangilash", "🔙 Ortga")
+            
+            bot.send_message(message.chat.id, response_text, reply_markup=markup)
+            
+        except Exception as e:
+            bot.send_message(message.chat.id, f"❌ Xatolik: {str(e)}")
+
+    @bot.message_handler(func=lambda message: message.text == "📋 Barcha so'rovlar")
+    def show_all_inquiries(message):
+        """Show all inquiries"""
+        if message.chat.id != ADMIN_CHAT_ID:
+            return
+        
+        try:
+            inquiries = get_customer_inquiries()
+            
+            if not inquiries:
+                bot.send_message(
+                    message.chat.id,
+                    "📋 **Barcha so'rovlar**\n\n"
+                    "Hozircha hech qanday so'rov yo'q."
+                )
+                return
+            
+            markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+            response_text = "📋 **Barcha mijoz so'rovlari:**\n\n"
+            
+            for inquiry in inquiries[:15]:  # Show first 15
+                inquiry_id, customer_name, customer_phone, customer_username, chat_id, inquiry_text, inquiry_type, location_lat, location_lon, location_address, status, admin_response, created_at, responded_at, source = inquiry
+                
+                status_emoji = "⏳" if status == "pending" else "✅"
+                source_emoji = "🌐" if source == "website" else "🤖"
+                
+                response_text += f"{status_emoji}{source_emoji} **ID{inquiry_id}** - {customer_name}\n"
+                response_text += f"📧 {inquiry_text[:40]}{'...' if len(inquiry_text) > 40 else ''}\n"
+                response_text += f"📅 {created_at}\n\n"
+                
+                markup.add(f"📋 ID{inquiry_id} - Ko'rish")
+            
+            markup.add("🔄 Yangilash", "🔙 Ortga")
+            
+            bot.send_message(message.chat.id, response_text, reply_markup=markup)
+            
+        except Exception as e:
+            bot.send_message(message.chat.id, f"❌ Xatolik: {str(e)}")
+
+    @bot.message_handler(func=lambda message: "ID" in message.text and "Ko'rish" in message.text)
+    def view_inquiry_details(message):
+        """View inquiry details and respond"""
+        if message.chat.id != ADMIN_CHAT_ID:
+            return
+        
+        try:
+            # Extract inquiry ID
+            inquiry_id = int(message.text.split("ID")[1].split(" ")[0])
+            inquiry = get_inquiry_by_id(inquiry_id)
+            
+            if not inquiry:
+                bot.send_message(message.chat.id, "❌ So'rov topilmadi.")
+                return
+            
+            inquiry_id, customer_name, customer_phone, customer_username, chat_id, inquiry_text, inquiry_type, location_lat, location_lon, location_address, status, admin_response, created_at, responded_at, source = inquiry
+            
+            # Format inquiry details
+            source_name = "Website" if source == "website" else "Telegram Bot"
+            status_name = "Javob berilgan" if status == "responded" else "Javob kutmoqda"
+            
+            details_text = f"""
+🔍 **So'rov tafsilotlari**
+
+🆔 ID: {inquiry_id}
+👤 Mijoz: {customer_name}
+📞 Telefon: {customer_phone or 'Kiritilmagan'}
+👤 Username: @{customer_username or 'Mavjud emas'}
+📱 Chat ID: {chat_id or 'Mavjud emas'}
+🌐 Manba: {source_name}
+📋 Status: {status_name}
+📅 Kelgan vaqt: {created_at}
+
+📝 **So'rov matni:**
+{inquiry_text}
+"""
+            
+            if location_lat and location_lon:
+                details_text += f"\n📍 **Joylashuv:** {location_address or 'Mavjud'}"
+            
+            if admin_response:
+                details_text += f"\n\n✅ **Admin javobi:**\n{admin_response}\n📅 Javob vaqti: {responded_at}"
+            
+            markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+            
+            if status == "pending":
+                markup.add(f"💬 ID{inquiry_id}ga javob berish")
+            
+            if source == "telegram" and chat_id:
+                markup.add(f"📞 ID{inquiry_id}ga bevosita xabar yuborish")
+            
+            markup.add("🔙 Ortga")
+            
+            # Store inquiry ID for response
+            set_user_state(message.chat.id, "viewing_inquiry", str(inquiry_id))
+            
+            bot.send_message(message.chat.id, details_text, reply_markup=markup)
+            
+            # Show location if available
+            if location_lat and location_lon:
+                bot.send_location(message.chat.id, location_lat, location_lon)
+            
+        except Exception as e:
+            bot.send_message(message.chat.id, f"❌ Xatolik: {str(e)}")
+
+    @bot.message_handler(func=lambda message: "javob berish" in message.text and "ID" in message.text)
+    def start_inquiry_response(message):
+        """Start responding to inquiry"""
+        if message.chat.id != ADMIN_CHAT_ID:
+            return
+        
+        try:
+            # Extract inquiry ID
+            inquiry_id = int(message.text.split("ID")[1].split("ga")[0])
+            
+            set_user_state(message.chat.id, "responding_to_inquiry", str(inquiry_id))
+            
+            markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+            markup.add("🔙 Bekor qilish")
+            
+            bot.send_message(
+                message.chat.id, 
+                f"💬 **ID{inquiry_id} so'roviga javob**\n\n"
+                "Mijozga jo'natmoqchi bo'lgan javobingizni yozing:",
+                reply_markup=markup
+            )
+            
+        except Exception as e:
+            bot.send_message(message.chat.id, f"❌ Xatolik: {str(e)}")
+
+    @bot.message_handler(func=lambda message: get_user_state(message.chat.id)[0] == "responding_to_inquiry")
+    def send_inquiry_response(message):
+        """Send response to inquiry"""
+        if message.text == "🔙 Bekor qilish":
+            clear_user_state(message.chat.id)
+            show_customer_requests(message)
+            return
+        
+        try:
+            state, inquiry_id = get_user_state(message.chat.id)
+            inquiry_id = int(inquiry_id)
+            
+            # Save response to database
+            inquiry_details = respond_to_inquiry(inquiry_id, message.text)
+            
+            if inquiry_details:
+                customer_name, chat_id, inquiry_text, customer_phone, source = inquiry_details
+                
+                # Send notification to customer if from Telegram
+                if source == "telegram" and chat_id:
+                    try:
+                        response_message = f"""
+👋 Assalomu alaykum {customer_name}!
+
+💬 **So'rovingizga javob:**
+{message.text}
+
+📋 **Sizning so'rovingiz:**
+{inquiry_text[:100]}{'...' if len(inquiry_text) > 100 else ''}
+
+🤝 Boshqa savollaringiz bo'lsa, bemalol yozing!
+"""
+                        bot.send_message(chat_id, response_message)
+                        notification = "✅ Mijozga Telegram orqali javob yuborildi!"
+                    except:
+                        notification = "⚠️ Javob saqlandi, lekin mijozga yuborib bo'lmadi."
+                else:
+                    notification = f"✅ Javob saqlandi! ({source} so'rovi)"
+                
+                bot.send_message(
+                    message.chat.id,
+                    f"✅ **Javob muvaffaqiyatli yuborildi!**\n\n"
+                    f"📋 So'rov ID: {inquiry_id}\n"
+                    f"👤 Mijoz: {customer_name}\n"
+                    f"💬 Javob: {message.text}\n\n"
+                    f"{notification}"
+                )
+            else:
+                bot.send_message(message.chat.id, "❌ So'rov topilmadi.")
+            
+        except Exception as e:
+            bot.send_message(message.chat.id, f"❌ Xatolik: {str(e)}")
+        
+        clear_user_state(message.chat.id)
+        show_customer_requests(message)
     
     @bot.message_handler(func=lambda message: message.text == "📋 Faol suhbatlar")
     def show_active_chats(message):
