@@ -104,7 +104,8 @@ def verify_admin_code(message):
         bot.send_message(message.chat.id, "❌ Noto'g'ri kod. Qaytadan urinib ko'ring:")
 
 def show_admin_panel(message):
-    """Show admin panel"""
+    """Show admin panel with quick action floating buttons"""
+    # Main admin panel buttons
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
     markup.add("➕ Yangi xodim qo'shish", "📤 Vazifa berish")
     markup.add("📍 Xodimlarni kuzatish", "👥 Mijozlar so'rovlari")
@@ -115,6 +116,22 @@ def show_admin_panel(message):
         message.chat.id,
         "🛠 Admin paneli\n\nKerakli bo'limni tanlang:",
         reply_markup=markup
+    )
+    
+    # Send quick action floating buttons as inline keyboard
+    quick_markup = types.InlineKeyboardMarkup(row_width=4)
+    quick_markup.add(
+        types.InlineKeyboardButton("⚡ Tezkor vazifa", callback_data="quick_task"),
+        types.InlineKeyboardButton("📊 Tezkor hisobot", callback_data="quick_report"), 
+        types.InlineKeyboardButton("🔍 Tezkor qidiruv", callback_data="quick_search"),
+        types.InlineKeyboardButton("📢 Umumiy xabar", callback_data="broadcast_message")
+    )
+    
+    bot.send_message(
+        message.chat.id,
+        "⚡ **Tezkor Harakatlar**\n\nEng ko'p ishlatiladigan funksiyalar:",
+        reply_markup=quick_markup,
+        parse_mode='Markdown'
     )
 
 @bot.message_handler(func=lambda message: message.text == "📤 Vazifa berish")
@@ -300,7 +317,7 @@ def employee_login(message):
     show_employee_panel(message, employee_name)
 
 def show_employee_panel(message, employee_name=None):
-    """Show employee panel"""
+    """Show employee panel with quick action floating buttons"""
     if not employee_name:
         for name, chat_id in EMPLOYEES.items():
             if chat_id == message.chat.id:
@@ -311,6 +328,7 @@ def show_employee_panel(message, employee_name=None):
         bot.send_message(message.chat.id, "❌ Profil topilmadi.")
         return
     
+    # Main employee panel buttons
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
     markup.add("📌 Mening vazifalarim", "📂 Vazifalar tarixi")
     markup.add("📊 Hisobotlar")
@@ -320,6 +338,25 @@ def show_employee_panel(message, employee_name=None):
         message.chat.id,
         f"👤 Xodim paneli\n\nSalom, {employee_name}!\n\nKerakli bo'limni tanlang:",
         reply_markup=markup
+    )
+    
+    # Send employee quick action floating buttons
+    quick_markup = types.InlineKeyboardMarkup(row_width=3)
+    quick_markup.add(
+        types.InlineKeyboardButton("🚀 Faol vazifalar", callback_data="quick_active_tasks"),
+        types.InlineKeyboardButton("📍 Joylashuvni yuborish", callback_data="quick_location"),
+        types.InlineKeyboardButton("📝 Tezkor hisobot", callback_data="quick_employee_report")
+    )
+    quick_markup.add(
+        types.InlineKeyboardButton("💬 Admin bilan aloqa", callback_data="contact_admin"),
+        types.InlineKeyboardButton("📈 Mening statistikam", callback_data="my_stats")
+    )
+    
+    bot.send_message(
+        message.chat.id,
+        f"⚡ **Tezkor Harakatlar - {employee_name}**\n\nEng muhim funksiyalar:",
+        reply_markup=quick_markup,
+        parse_mode='Markdown'
     )
 
 @bot.message_handler(func=lambda message: message.text == "📌 Mening vazifalarim")
@@ -460,12 +497,262 @@ def handle_customer_inquiry(message):
     clear_user_state(message.chat.id)
     start_message(message)
 
+# QUICK ACTION HANDLERS FOR MESSAGES
+@bot.message_handler(func=lambda message: get_user_state(message.chat.id)[0] == "quick_task_description")
+def handle_quick_task_description(message):
+    """Handle quick task description"""
+    if message.chat.id not in admin_data:
+        admin_data[message.chat.id] = {"quick_mode": True}
+    
+    admin_data[message.chat.id]["description"] = message.text
+    admin_data[message.chat.id]["payment"] = None  # Quick tasks have no payment
+    
+    # Proceed directly to employee selection for quick mode
+    proceed_to_employee_selection(message)
+
+@bot.message_handler(func=lambda message: get_user_state(message.chat.id)[0] == "quick_search_query")
+def handle_quick_search(message):
+    """Handle quick search query"""
+    query = message.text.strip().lower()
+    
+    try:
+        import sqlite3
+        conn = sqlite3.connect('task_management.db')
+        cursor = conn.cursor()
+        
+        results = []
+        
+        # Search in tasks
+        cursor.execute("""
+            SELECT 'Vazifa' as type, id, description, assigned_to, status 
+            FROM tasks WHERE LOWER(description) LIKE ? OR LOWER(assigned_to) LIKE ?
+            LIMIT 10
+        """, (f'%{query}%', f'%{query}%'))
+        results.extend(cursor.fetchall())
+        
+        # Search in customer inquiries
+        cursor.execute("""
+            SELECT 'Mijoz' as type, id, customer_name, inquiry_text, status
+            FROM customer_inquiries WHERE LOWER(customer_name) LIKE ? OR LOWER(inquiry_text) LIKE ?
+            LIMIT 10
+        """, (f'%{query}%', f'%{query}%'))
+        results.extend(cursor.fetchall())
+        
+        conn.close()
+        
+        if results:
+            result_text = f"🔍 **Qidiruv natijalari: '{query}'**\n\n"
+            for result in results:
+                result_text += f"📋 **{result[0]}** #{result[1]}\n"
+                if result[0] == 'Vazifa':
+                    result_text += f"📝 {result[2][:50]}...\n"
+                    result_text += f"👤 {result[3]} - {result[4]}\n\n"
+                else:
+                    result_text += f"👤 {result[2]}\n"
+                    result_text += f"💬 {result[3][:50]}...\n\n"
+        else:
+            result_text = f"❌ '{query}' bo'yicha hech narsa topilmadi"
+        
+        bot.send_message(message.chat.id, result_text, parse_mode='Markdown')
+        
+    except Exception as e:
+        bot.send_message(message.chat.id, f"❌ Qidiruv xatoligi: {str(e)}")
+    
+    clear_user_state(message.chat.id)
+
+@bot.message_handler(func=lambda message: get_user_state(message.chat.id)[0] == "broadcast_message")
+def handle_broadcast_message(message):
+    """Handle broadcast message to all employees"""
+    broadcast_text = f"""
+📢 **Admin xabari**
+
+{message.text}
+
+📅 {datetime.now().strftime('%d.%m.%Y %H:%M')}
+"""
+    
+    success_count = 0
+    failed_count = 0
+    
+    for employee_name, chat_id in EMPLOYEES.items():
+        try:
+            bot.send_message(chat_id, broadcast_text, parse_mode='Markdown')
+            success_count += 1
+        except Exception as e:
+            failed_count += 1
+            print(f"Broadcast failed for {employee_name}: {e}")
+    
+    bot.send_message(
+        message.chat.id,
+        f"📢 **Xabar yuborildi**\n\n"
+        f"✅ Muvaffaqiyatli: {success_count} xodim\n"
+        f"❌ Xatolik: {failed_count} xodim",
+        parse_mode='Markdown'
+    )
+    
+    clear_user_state(message.chat.id)
+
+@bot.message_handler(func=lambda message: get_user_state(message.chat.id)[0] == "contact_admin_message")
+def handle_contact_admin_message(message):
+    """Handle employee message to admin"""
+    # Find employee name
+    employee_name = None
+    for name, chat_id in EMPLOYEES.items():
+        if chat_id == message.chat.id:
+            employee_name = name
+            break
+    
+    admin_message = f"""
+💬 **Xodimdan xabar**
+
+👤 **Xodim:** {employee_name or "Noma'lum"}
+💬 **Xabar:** {message.text}
+📅 **Vaqt:** {datetime.now().strftime('%d.%m.%Y %H:%M')}
+
+Javob berish uchun: /reply {message.chat.id} [xabar]
+"""
+    
+    try:
+        bot.send_message(ADMIN_CHAT_ID, admin_message, parse_mode='Markdown')
+        bot.send_message(
+            message.chat.id,
+            "✅ Xabaringiz adminga yuborildi!\n📞 Tez orada javob beriladi."
+        )
+    except Exception as e:
+        bot.send_message(
+            message.chat.id,
+            f"❌ Xabar yuborishda xatolik: {str(e)}"
+        )
+    
+    clear_user_state(message.chat.id)
+
+@bot.message_handler(content_types=['location'], func=lambda message: get_user_state(message.chat.id)[0] == "quick_location_share")
+def handle_quick_location_share(message):
+    """Handle quick location sharing from employee"""
+    # Find employee name
+    employee_name = None
+    for name, chat_id in EMPLOYEES.items():
+        if chat_id == message.chat.id:
+            employee_name = name
+            break
+    
+    # Save location to database
+    import sqlite3
+    try:
+        conn = sqlite3.connect('task_management.db')
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+            INSERT INTO employee_locations (employee_name, employee_chat_id, latitude, longitude, timestamp)
+            VALUES (?, ?, ?, ?, ?)
+        """, (employee_name, message.chat.id, message.location.latitude, message.location.longitude, datetime.now()))
+        
+        conn.commit()
+        conn.close()
+        
+        # Send confirmation to employee
+        bot.send_message(
+            message.chat.id,
+            "✅ **Joylashuv saqlandi!**\n\nAdmin sizning joylashuvingizni ko'rishi mumkin.",
+            parse_mode='Markdown',
+            reply_markup=types.ReplyKeyboardRemove()
+        )
+        
+        # Notify admin with location
+        admin_message = f"""
+📍 **Xodim joylashuvi**
+
+👤 **Xodim:** {employee_name}
+📅 **Vaqt:** {datetime.now().strftime('%d.%m.%Y %H:%M')}
+🎯 **Tezkor ulashish orqali**
+"""
+        
+        bot.send_message(ADMIN_CHAT_ID, admin_message, parse_mode='Markdown')
+        bot.send_location(ADMIN_CHAT_ID, message.location.latitude, message.location.longitude)
+        
+    except Exception as e:
+        bot.send_message(message.chat.id, f"❌ Xatolik: {str(e)}")
+    
+    clear_user_state(message.chat.id)
+
 # BACK HANDLERS
 @bot.message_handler(func=lambda message: message.text == "🔙 Ortga")
 def go_back(message):
     """Go back to main menu"""
     clear_user_state(message.chat.id)
     start_message(message)
+
+# CALLBACK HANDLERS FOR ORIGINAL TASK ACTIONS
+@bot.callback_query_handler(func=lambda call: call.data.startswith('start_task_'))
+def start_task_callback(call):
+    """Handle start task callback"""
+    task_id = int(call.data.split('_')[2])
+    
+    # Update task status to in_progress
+    update_task_status(task_id, "in_progress")
+    
+    bot.answer_callback_query(call.id, "✅ Vazifa boshlandi!")
+    bot.edit_message_text(
+        "🔄 Vazifa boshlandi!\n\nVazifani tugatgach, \"✅ Tugatish\" tugmasini bosing.",
+        call.message.chat.id,
+        call.message.message_id
+    )
+    
+    # Notify admin
+    bot.send_message(
+        ADMIN_CHAT_ID,
+        f"🔄 Vazifa #{task_id} boshlandi!\n👤 Xodim tomonidan qabul qilindi."
+    )
+
+@bot.callback_query_handler(func=lambda call: call.data.startswith('complete_task_'))
+def complete_task_callback(call):
+    """Handle complete task callback"""
+    task_id = int(call.data.split('_')[2])
+    
+    set_user_state(call.message.chat.id, "task_completion_report", str(task_id))
+    
+    bot.answer_callback_query(call.id, "📝 Hisobot yozing")
+    bot.send_message(
+        call.message.chat.id,
+        "📝 Vazifa haqida qisqacha hisobot yozing:",
+        reply_markup=types.ReplyKeyboardRemove()
+    )
+
+@bot.message_handler(func=lambda message: get_user_state(message.chat.id)[0] == "task_completion_report")
+def handle_task_completion(message):
+    """Handle task completion report"""
+    state, task_id_str = get_user_state(message.chat.id)
+    task_id = int(task_id_str)
+    
+    # Update task status
+    update_task_status(task_id, "completed", completion_report=message.text)
+    
+    # Get employee name
+    employee_name = None
+    for name, chat_id in EMPLOYEES.items():
+        if chat_id == message.chat.id:
+            employee_name = name
+            break
+    
+    # Success message to employee
+    bot.send_message(
+        message.chat.id,
+        "✅ Vazifa muvaffaqiyatli yakunlandi!\n\nRahmat!"
+    )
+    
+    # Admin notification
+    admin_message = f"""
+✅ Vazifa yakunlandi!
+
+🆔 Vazifa ID: {task_id}
+👤 Xodim: {employee_name or "Nomalum"}
+📝 Hisobot: {message.text}
+"""
+    
+    bot.send_message(ADMIN_CHAT_ID, admin_message)
+    
+    clear_user_state(message.chat.id)
+    show_employee_panel(message)
 
 # ERROR HANDLER
 @bot.message_handler(func=lambda message: True)
