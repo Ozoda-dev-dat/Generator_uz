@@ -3078,18 +3078,9 @@ Vazifani boshlash uchun "👤 Xodim" tugmasini bosing va vazifalar ro'yxatini ko
                 reply_markup=None
             )
             
-            # Prepare task start message with location info
+            # Prepare task start message
             start_message = "✅ Vazifa boshlandi!\n\n"
-            start_message += f"📝 Vazifa: {task[1]}\n"  # description
-            
-            # Add location coordinates if available
-            if task[2] and task[3]:  # latitude and longitude
-                lat, lon = task[2], task[3]
-                maps_url = f"https://maps.google.com/?q={lat},{lon}"
-                start_message += f"📍 Joylashuv koordinatalari:\n"
-                start_message += f"🌐 {lat:.6f}, {lon:.6f}\n"
-                start_message += f"🗺 Google Maps: {maps_url}\n\n"
-            
+            start_message += f"📝 Vazifa: {task[1]}\n\n"  # description
             start_message += "Vazifani yakunlash uchun '📌 Mening vazifalarim' bo'limiga o'ting."
             
             bot.send_message(call.message.chat.id, start_message)
@@ -3097,6 +3088,7 @@ Vazifani boshlash uchun "👤 Xodim" tugmasini bosing va vazifalar ro'yxatini ko
             # Send location if coordinates are available
             if task[2] and task[3]:
                 bot.send_location(call.message.chat.id, task[2], task[3])
+                bot.send_message(call.message.chat.id, "📍 Vazifa joylashuvi yuqorida ko'rsatilgan.")
             
             # Notify admin
             add_message(
