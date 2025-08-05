@@ -190,6 +190,7 @@ def main():
                 "✅ Lokatsiya qabul qilindi.\n\n💰 To'lov miqdorini tanlang:",
                 reply_markup=markup
             )
+            print(f"DEBUG: Payment buttons sent to {message.chat.id}")
             return
         
         # Handle customer location sharing
@@ -472,36 +473,7 @@ def main():
             reply_markup=markup
         )
 
-    @bot.message_handler(content_types=['location'])
-    def receive_task_location(message):
-        """Receive task location"""
-        state, _ = get_user_state(message.chat.id)
-        
-        if state == "assign_task_location":
-            # Ensure admin_data exists for this user
-            if message.chat.id not in admin_data:
-                admin_data[message.chat.id] = {}
-                
-            admin_data[message.chat.id]["location"] = {
-                "latitude": message.location.latitude,
-                "longitude": message.location.longitude
-            }
-            
-            set_user_state(message.chat.id, "assign_task_payment")
-            
-            markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
-            markup.add("💰 To'lov miqdorini kiriting")
-            markup.add("⏭ To'lov belgilanmagan")
-            markup.add("🔙 Bekor qilish")
-            
-            bot.send_message(
-                message.chat.id,
-                "✅ Lokatsiya qabul qilindi.\n\n💰 Vazifa uchun to'lov miqdorini kiriting yoki 'To'lov belgilanmagan' tugmasini bosing:",
-                reply_markup=markup
-            )
-        else:
-            # Handle location sharing for tracking
-            handle_location_sharing(message)
+
 
     @bot.message_handler(func=lambda message: get_user_state(message.chat.id)[0] == "assign_task_payment")
     def get_task_payment(message):
