@@ -382,6 +382,15 @@ def get_inquiry_by_id(inquiry_id: int) -> Optional[Tuple]:
     conn.close()
     return inquiry
 
+def get_task_by_id(task_id: int) -> Optional[Tuple]:
+    """Get specific task by ID"""
+    conn = sqlite3.connect(DATABASE_PATH)
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM tasks WHERE id = ?", (task_id,))
+    task = cursor.fetchone()
+    conn.close()
+    return task
+
 # Initialize database on import
 if not os.path.exists(DATABASE_PATH):
     init_database()

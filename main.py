@@ -16,7 +16,7 @@ from config import BOT_TOKEN, ADMIN_CODE, ADMIN_CHAT_ID, EMPLOYEES
 from database import (
     init_database, add_task, get_employee_tasks, update_task_status, add_debt, get_debts,
     add_message, get_user_state, set_user_state, clear_user_state,
-    add_customer_inquiry, get_customer_inquiries, respond_to_inquiry, get_inquiry_by_id
+    add_customer_inquiry, get_customer_inquiries, respond_to_inquiry, get_inquiry_by_id, get_task_by_id
 )
 from utils import (
     save_media_file, generate_employee_report, generate_admin_report,
@@ -3064,6 +3064,12 @@ Vazifani boshlash uchun "👤 Xodim" tugmasini bosing va vazifalar ro'yxatini ko
         task_id = int(call.data.split("_")[-1])
         
         try:
+            # Get task details including location
+            task = get_task_by_id(task_id)
+            if not task:
+                bot.answer_callback_query(call.id, "❌ Vazifa topilmadi!")
+                return
+            
             update_task_status(task_id, "in_progress")
             
             bot.edit_message_reply_markup(
@@ -3072,11 +3078,25 @@ Vazifani boshlash uchun "👤 Xodim" tugmasini bosing va vazifalar ro'yxatini ko
                 reply_markup=None
             )
             
-            bot.send_message(
-                call.message.chat.id,
-                "✅ Vazifa boshlandi!\n\n"
-                "Vazifani yakunlash uchun '📌 Mening vazifalarim' bo'limiga o'ting."
-            )
+            # Prepare task start message with location info
+            start_message = "✅ Vazifa boshlandi!\n\n"
+            start_message += f"📝 Vazifa: {task[1]}\n"  # description
+            
+            # Add location coordinates if available
+            if task[2] and task[3]:  # latitude and longitude
+                lat, lon = task[2], task[3]
+                maps_url = f"https://maps.google.com/?q={lat},{lon}"
+                start_message += f"📍 Joylashuv koordinatalari:\n"
+                start_message += f"🌐 {lat:.6f}, {lon:.6f}\n"
+                start_message += f"🗺 Google Maps: {maps_url}\n\n"
+            
+            start_message += "Vazifani yakunlash uchun '📌 Mening vazifalarim' bo'limiga o'ting."
+            
+            bot.send_message(call.message.chat.id, start_message)
+            
+            # Send location if coordinates are available
+            if task[2] and task[3]:
+                bot.send_location(call.message.chat.id, task[2], task[3])
             
             # Notify admin
             add_message(
