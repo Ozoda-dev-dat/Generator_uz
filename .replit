@@ -14,19 +14,11 @@ author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
-args = "Enhanced Bot"
+args = "Website API"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
-args = "Website API"
-
-[[workflows.workflow]]
-name = "Enhanced Bot"
-author = "agent"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "python main.py"
+args = "Enhanced Bot"
 
 [[workflows.workflow]]
 name = "Website API"
@@ -36,6 +28,14 @@ author = "agent"
 task = "shell.exec"
 args = "python website_api.py"
 waitForPort = 8080
+
+[[workflows.workflow]]
+name = "Enhanced Bot"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python main.py"
 
 [deployment]
 build = ["sh", "-c", "pip install pytelegrambotapi openpyxl trafilatura"]

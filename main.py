@@ -4105,6 +4105,16 @@ Bu joyni quyidagi xizmatlar orqali o'rganishingiz mumkin:
                 bot.infinity_polling(none_stop=True, interval=1, timeout=20, long_polling_timeout=60)
             except Exception as e:
                 print(f"⚠️ Bot ulanishida xatolik: {e}")
+                # Send notification about restart
+                try:
+                    bot.send_message(
+                        ADMIN_CHAT_ID,
+                        f"⚠️ Bot xatolik tufayli qayta ishga tushmoqda!\n\n"
+                        f"📝 Xatolik: {str(e)[:100]}...\n"
+                        f"🔄 10 soniyadan keyin qayta ulanish."
+                    )
+                except:
+                    pass
                 print("🔄 10 soniyadan keyin avtomatik qayta ulanish...")
                 import time
                 time.sleep(10)
@@ -4112,6 +4122,17 @@ Bu joyni quyidagi xizmatlar orqali o'rganishingiz mumkin:
                 continue
         
     except KeyboardInterrupt:
+        print("\n⚠️ Manual shutdown initiated...")
+        try:
+            bot.send_message(
+                ADMIN_CHAT_ID,
+                "⚠️ Bot o'chish rejimiga o'tmoqda!\n\n"
+                "🔄 Qayta ishga tushirish uchun serverni restart qiling."
+            )
+            print("📢 Shutdown notification sent to admin")
+            time.sleep(10)  # Wait 10 seconds
+        except Exception as e:
+            print(f"❌ Shutdown notification error: {e}")
         print("\n🛑 Bot to'xtatildi.")
         sys.exit(0)
     except Exception as e:
