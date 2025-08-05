@@ -439,6 +439,8 @@ def main():
 
     def show_admin_panel(message):
         """Show admin panel"""
+        print(f"DEBUG: Admin panel ko'rsatilmoqda. Chat ID: {message.chat.id}")
+        
         markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
         markup.add("➕ Yangi xodim qo'shish", "📤 Vazifa berish")
         markup.add("📍 Xodimlarni kuzatish", "👥 Mijozlar so'rovlari")
@@ -450,10 +452,17 @@ def main():
             "🛠 Admin paneli\n\nKerakli bo'limni tanlang:",
             reply_markup=markup
         )
+        print(f"DEBUG: Admin paneli yuborildi")
 
     @bot.message_handler(func=lambda message: message.text == "📤 Vazifa berish")
     def start_task_assignment(message):
         """Start task assignment process"""
+        print(f"DEBUG: Vazifa berish tugmasi bosildi. Chat ID: {message.chat.id}")
+        
+        if message.chat.id != ADMIN_CHAT_ID:
+            bot.send_message(message.chat.id, "❌ Bu funksiya faqat admin uchun!")
+            return
+            
         if len(EMPLOYEES) == 0:
             bot.send_message(message.chat.id, "❌ Hech qanday xodim topilmadi!")
             return
@@ -467,6 +476,7 @@ def main():
             "📝 Vazifa tavsifini kiriting:",
             reply_markup=markup
         )
+        print(f"DEBUG: Admin'ga vazifa tavsifi so'raldi")
 
     @bot.message_handler(func=lambda message: get_user_state(message.chat.id)[0] == "assign_task_description")
     def get_task_description(message):
@@ -3786,9 +3796,15 @@ Mijoz admindan javob kutmoqda.
 
 
     # COMMON HANDLERS
-    @bot.message_handler(func=lambda message: message.text == "🔙 Ortga")
+    @bot.message_handler(func=lambda message: message.text == "🔙 Ortga" and message.chat.id != ADMIN_CHAT_ID)
     def go_back(message):
-        """Go back to main menu"""
+        """Go back to main menu for non-admin users"""
+        clear_user_state(message.chat.id)
+        start_message(message)
+    
+    @bot.message_handler(func=lambda message: message.text == "🔙 Ortga" and message.chat.id == ADMIN_CHAT_ID)
+    def admin_go_back(message):
+        """Go back to admin panel"""
         clear_user_state(message.chat.id)
         start_message(message)
 
