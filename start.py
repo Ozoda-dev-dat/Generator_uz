@@ -66,6 +66,8 @@ def check_required_env():
 def main():
     """Main function for production deployment"""
     print("🚀 Starting Enhanced Telegram Bot for production deployment...")
+    print("🌐 Production mode: Autoscale Deployment")
+    print("📱 Bot + Website API + Health Check server")
     
     # Check environment variables
     check_required_env()
@@ -73,6 +75,15 @@ def main():
     # Start health check server in a separate thread for Cloud Run
     health_thread = threading.Thread(target=start_health_server, daemon=True)
     health_thread.start()
+    
+    # Start website API in separate thread
+    from website_api import app as website_app
+    website_thread = threading.Thread(
+        target=lambda: website_app.run(host='0.0.0.0', port=8081, debug=False),
+        daemon=True
+    )
+    website_thread.start()
+    print("🌐 Website API started on port 8081")
     
     # Small delay to let health server start
     time.sleep(2)

@@ -23,13 +23,22 @@ This guide provides instructions for deploying the Enhanced Telegram Task Manage
 ## Deployment Options
 
 ### Option 1: Replit Deployment (Recommended)
-1. Set required environment variables in Replit Secrets:
-   - `BOT_TOKEN`: Your Telegram bot token
-   - `ADMIN_CODE`: Admin access code (optional, defaults to "1234")
-   - `ADMIN_CHAT_ID`: Admin chat ID for notifications
 
-2. Use the deploy button in Replit interface
-3. Replit will automatically handle the deployment using the fixed configuration
+#### 🚀 Deploy Commands:
+- **Build Command:** bo'sh qoldiring (dependencies avtomatik o'rnatiladi)
+- **Start Command:** `python start.py`
+
+#### 🔧 Environment Variables (Replit Secrets):
+- `BOT_TOKEN`: Your Telegram bot token (majburiy)
+- `ADMIN_CHAT_ID`: 7792775986 (sizning chat ID)
+- `ADMIN_CODE`: 1234 (ixtiyoriy)
+
+#### 📋 Deploy qilish bosqichlari:
+1. Replit Secrets panelida BOT_TOKEN qo'shing
+2. Deploy tugmasini bosing
+3. Autoscale Deployment tanlang
+4. Start Command: `python start.py`
+5. Deploy tugmasini bosing
 
 ### Option 2: Cloud Run Deployment
 1. Build and push Docker image:
