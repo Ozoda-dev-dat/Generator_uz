@@ -235,6 +235,58 @@ def main():
         if state == "employee_location":
             handle_employee_location_data(message)
             return
+            
+        # Handle customer location sharing (moved from separate handler)
+        if state == "customer_location":
+            data_str = data
+            temp_data = parse_json_data(data_str)
+            
+            if message.location:
+                latitude = message.location.latitude
+                longitude = message.location.longitude
+                
+                # Save customer info with location
+                temp_data.update({
+                    "latitude": latitude,
+                    "longitude": longitude,
+                    "chat_id": message.chat.id,
+                    "username": message.from_user.username or ""
+                })
+                
+                set_user_state(message.chat.id, "customer_chat", serialize_json_data(temp_data))
+                
+                # Notify admin about new customer
+                customer_info = f"""
+👤 Yangi mijoz bog'landi!
+
+📱 Ism: {temp_data['name']}
+📞 Telefon: {temp_data['phone']}
+🆔 Chat ID: {message.chat.id}
+👤 Username: @{temp_data['username']} 
+📍 Lokatsiya: {latitude}, {longitude}
+🕐 Vaqt: {datetime.now().strftime('%d.%m.%Y %H:%M')}
+
+Mijoz admindan javob kutmoqda.
+"""
+                
+                bot.send_message(ADMIN_CHAT_ID, customer_info)
+                bot.send_location(ADMIN_CHAT_ID, latitude, longitude)
+                
+                markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+                markup.add("❌ Suhbatni tugatish")
+                
+                bot.send_message(
+                    message.chat.id,
+                    "✅ Ma'lumotlaringiz adminga yuborildi!\n\n"
+                    "💬 Endi xabaringizni yozing. Admin sizga javob beradi.\n"
+                    "Suhbatni tugatish uchun tugmani bosing.",
+                    reply_markup=markup
+                )
+            else:
+                bot.send_message(message.chat.id, "❌ Joylashuvni yuborishda xatolik. Qayta urinib ko'ring.")
+            return
+            
+        print(f"DEBUG: Unhandled location state: {state}")
     
     def handle_customer_location_data(message, state, data):
         """Handle customer location sharing"""
@@ -3689,55 +3741,7 @@ Qarz ma'lumotlari saqlandi. Rahmat!
         clear_user_state(message.chat.id)
         customer_panel(message)
 
-    @bot.message_handler(content_types=['location'], func=lambda message: get_user_state(message.chat.id)[0] == "customer_location")
-    def get_customer_location(message):
-        """Get customer location and start chat"""
-        state, data_str = get_user_state(message.chat.id)
-        temp_data = parse_json_data(data_str)
-        
-        if message.location:
-            latitude = message.location.latitude
-            longitude = message.location.longitude
-            
-            # Save customer info with location
-            temp_data.update({
-                "latitude": latitude,
-                "longitude": longitude,
-                "chat_id": message.chat.id,
-                "username": message.from_user.username or ""
-            })
-            
-            set_user_state(message.chat.id, "customer_chat", serialize_json_data(temp_data))
-            
-            # Notify admin about new customer
-            customer_info = f"""
-👤 Yangi mijoz bog'landi!
 
-📱 Ism: {temp_data['name']}
-📞 Telefon: {temp_data['phone']}
-🆔 Chat ID: {message.chat.id}
-👤 Username: @{temp_data['username']} 
-📍 Lokatsiya: {latitude}, {longitude}
-🕐 Vaqt: {datetime.now().strftime('%d.%m.%Y %H:%M')}
-
-Mijoz admindan javob kutmoqda.
-"""
-            
-            bot.send_message(ADMIN_CHAT_ID, customer_info)
-            bot.send_location(ADMIN_CHAT_ID, latitude, longitude)
-            
-            markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
-            markup.add("❌ Suhbatni tugatish")
-            
-            bot.send_message(
-                message.chat.id,
-                "✅ Ma'lumotlaringiz adminga yuborildi!\n\n"
-                "💬 Endi xabaringizni yozing. Admin sizga javob beradi.\n"
-                "Suhbatni tugatish uchun tugmani bosing.",
-                reply_markup=markup
-            )
-        else:
-            bot.send_message(message.chat.id, "❌ Joylashuvni yuborishda xatolik. Qayta urinib ko'ring.")
 
     @bot.message_handler(func=lambda message: get_user_state(message.chat.id)[0] == "customer_location" and message.text == "🔙 Bekor qilish")
     def cancel_customer_location(message):
