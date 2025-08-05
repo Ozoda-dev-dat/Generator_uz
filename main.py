@@ -167,12 +167,39 @@ def main():
         )
 
     @bot.message_handler(content_types=['location'])
-    def handle_customer_location(message):
-        """Handle customer location sharing"""
+    def handle_all_location(message):
+        """Handle all location sharing - customer, admin task assignment, employee"""
         state, data = get_user_state(message.chat.id)
         
-        if state not in ["waiting_for_location", "customer_contact_saved"]:
+        # Handle admin task assignment location
+        if state == "assign_task_location":
+            admin_data[message.chat.id]["location"] = {
+                "latitude": message.location.latitude,
+                "longitude": message.location.longitude
+            }
+            
+            set_user_state(message.chat.id, "assign_task_payment")
+            
+            markup = types.ReplyKeyboardRemove()
+            bot.send_message(
+                message.chat.id,
+                "✅ Lokatsiya qabul qilindi.\n\n💰 To'lov miqdorini kiriting (so'mda):",
+                reply_markup=markup
+            )
             return
+        
+        # Handle customer location sharing
+        if state in ["waiting_for_location", "customer_contact_saved"]:
+            handle_customer_location_data(message, state, data)
+            return
+        
+        # Handle employee location sharing
+        if state == "employee_location":
+            handle_employee_location_data(message)
+            return
+    
+    def handle_customer_location_data(message, state, data):
+        """Handle customer location sharing"""
         
         # Get existing customer data or create new
         if data:
@@ -201,6 +228,14 @@ def main():
             "✅ Joylashuv saqlandi!\n\n"
             "Endi so'rovingizni yozing:",
             reply_markup=markup
+        )
+    
+    def handle_employee_location_data(message):
+        """Handle employee location sharing during task completion"""
+        # This will be implemented when employee location tracking is needed
+        bot.send_message(
+            message.chat.id,
+            "✅ Lokatsiya qabul qilindi!"
         )
 
     @bot.message_handler(func=lambda message: get_user_state(message.chat.id)[0] in ["writing_inquiry", "customer_contact_saved", "customer_location_saved"])
@@ -257,12 +292,12 @@ def main():
             # Save inquiry to database
             inquiry_id = add_customer_inquiry(
                 customer_name=customer_data.get('name', 'Mijoz'),
-                customer_phone=customer_data.get('phone'),
-                customer_username=customer_data.get('username'),
+                customer_phone=customer_data.get('phone', ''),
+                customer_username=customer_data.get('username', ''),
                 chat_id=message.chat.id,
                 inquiry_text=message.text,
-                location_lat=customer_data.get('location_lat'),
-                location_lon=customer_data.get('location_lon'),
+                location_lat=customer_data.get('location_lat', 0.0),
+                location_lon=customer_data.get('location_lon', 0.0),
                 inquiry_type='customer_request',
                 source='telegram'
             )
