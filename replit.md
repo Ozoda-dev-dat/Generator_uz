@@ -6,7 +6,6 @@ This project is an Enhanced Telegram Task Management Bot built in Python. Its ma
 
 Preferred communication style: Simple, everyday language.
 Task completion flow: Employees should return to main menu (employee panel) after completing tasks, not task list.
-Quick Action Features: Implemented floating buttons with intuitive icons for enhanced user experience and rapid access to common functions.
 
 # System Architecture
 
@@ -40,9 +39,6 @@ Quick Action Features: Implemented floating buttons with intuitive icons for enh
 - **Customer Inquiry System**: Comprehensive management system for inquiries from website and Telegram, with admin response capabilities and real-time notifications.
 - **Payment Processing System**: Three-way payment method (card, cash, debt) with detailed admin notifications.
 - **Streamlined Employee Experience**: Focused work environment without entertainment distractions.
-- **Quick Action Floating Buttons**: Intuitive icon-based floating buttons for rapid access to frequently used functions:
-  - **Admin Quick Actions**: Tezkor vazifa, tezkor hisobot, tezkor qidiruv, umumiy xabar
-  - **Employee Quick Actions**: Faol vazifalar, joylashuv ulashish, tezkor hisobot, admin aloqa, statistika
 
 ## File and Data Management
 - **Excel Integration**: `openpyxl` for multi-sheet report generation
