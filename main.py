@@ -974,6 +974,47 @@ Vazifani boshlash uchun "👤 Xodim" tugmasini bosing va vazifalar ro'yxatini ko
         clear_user_state(message.chat.id)
         show_customer_requests(message)
     
+    @bot.message_handler(func=lambda message: message.text == "🔄 Yangilash")
+    def refresh_current_menu(message):
+        """Refresh current menu based on context"""
+        if message.chat.id != ADMIN_CHAT_ID:
+            return
+        
+        try:
+            # Determine which menu to refresh based on recent messages
+            bot.send_message(message.chat.id, "🔄 Yangilanmoqda...")
+            
+            # Always refresh the main customer requests menu
+            show_customer_requests(message)
+            
+        except Exception as e:
+            bot.send_message(message.chat.id, f"❌ Yangilashda xatolik: {str(e)}")
+            show_customer_requests(message)
+
+    @bot.message_handler(func=lambda message: message.text == "🔄 Website yangilash")
+    def refresh_website_inquiries(message):
+        """Refresh website inquiries specifically"""
+        if message.chat.id != ADMIN_CHAT_ID:
+            return
+        
+        try:
+            bot.send_message(message.chat.id, "🔄 Website so'rovlari yangilanmoqda...")
+            show_website_inquiries(message)
+        except Exception as e:
+            bot.send_message(message.chat.id, f"❌ Xatolik: {str(e)}")
+
+    @bot.message_handler(func=lambda message: message.text == "🔄 Bot yangilash")
+    def refresh_bot_inquiries(message):
+        """Refresh bot inquiries specifically"""
+        if message.chat.id != ADMIN_CHAT_ID:
+            return
+        
+        try:
+            bot.send_message(message.chat.id, "🔄 Bot so'rovlari yangilanmoqda...")
+            show_bot_inquiries(message)
+        except Exception as e:
+            bot.send_message(message.chat.id, f"❌ Xatolik: {str(e)}")
+
     @bot.message_handler(func=lambda message: message.text == "📋 Faol suhbatlar")
     def show_active_chats(message):
         """Show active customer chats"""
