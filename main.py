@@ -180,10 +180,14 @@ def main():
             
             set_user_state(message.chat.id, "assign_task_payment")
             
-            markup = types.ReplyKeyboardRemove()
+            markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+            markup.add("💰 To'lov miqdorini kiriting")
+            markup.add("⏭ To'lov belgilanmagan")
+            markup.add("🔙 Bekor qilish")
+            
             bot.send_message(
                 message.chat.id,
-                "✅ Lokatsiya qabul qilindi.\n\n💰 To'lov miqdorini kiriting (so'mda):",
+                "✅ Lokatsiya qabul qilindi.\n\n💰 To'lov miqdorini tanlang:",
                 reply_markup=markup
             )
             return
