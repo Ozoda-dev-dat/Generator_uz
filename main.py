@@ -4182,24 +4182,6 @@ Bu joyni quyidagi xizmatlar orqali o'rganishingiz mumkin:
             main()  # Try again
 
 if __name__ == "__main__":
-    main()
-
-WEBHOOK_URL = f"{WEBHOOK_HOST}{WEBHOOK_PATH}"
-
-app = Flask(__name__)
-
-@app.route("/health")
-def health_check():
-    return "ok", 200
-
-@app.route(WEBHOOK_PATH, methods=['POST'])
-def webhook():
-    json_string = request.get_data().decode('utf-8')
-    update = telebot.types.Update.de_json(json_string)
-    bot.process_new_updates([update])
-    return '', 200
-
-if __name__ == "__main__":
     bot.remove_webhook()
     bot.set_webhook(url=WEBHOOK_URL)
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
