@@ -27,59 +27,6 @@ from utils import (
 
 
 
-
-
-
-
-
-
-
-
-# Initialize bot and Flask app
-app = Flask(__name__)
-bot = telebot.TeleBot(BOT_TOKEN)
-
-# --- WEBHOOK Sozlamalari ---
-# Render'dagi asosiy URL'ingizni bu yerga kiriting
-WEBHOOK_URL_BASE = "https://generator-uz.onrender.com"
-# Xavfsizlik uchun bot tokenini URL yo'liga qo'shish tavsiya etiladi
-WEBHOOK_URL_PATH = f"/{BOT_TOKEN}"
-
-
-@app.route(WEBHOOK_URL_PATH, methods=['POST'])
-def webhook():
-    """Telegramdan kelgan yangi xabarlarni qabul qilish uchun webhook handler."""
-    if request.headers.get('content-type') == 'application/json':
-        json_string = request.get_data().decode('utf-8')
-        update = telebot.types.Update.de_json(json_string)
-        bot.process_new_updates([update])
-        return '', 200
-    else:
-        return 'Invalid request format', 403
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 def main():
     """Main function to start the enhanced bot"""
     if not BOT_TOKEN:
