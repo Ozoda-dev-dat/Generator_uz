@@ -88,6 +88,10 @@ def main():
     # Small delay to let health server start
     time.sleep(2)
     
+    # Start keep-alive service
+    from keep_alive import start_keep_alive
+    start_keep_alive()
+    
     # Start the main bot
     try:
         print("🤖 Starting Telegram bot...")

@@ -20,6 +20,10 @@ args = "Enhanced Bot"
 task = "workflow.run"
 args = "Website API"
 
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Keep Alive"
+
 [[workflows.workflow]]
 name = "Enhanced Bot"
 author = "agent"
@@ -35,6 +39,14 @@ author = "agent"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "python website_api.py"
+
+[[workflows.workflow]]
+name = "Keep Alive"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python keep_alive.py"
 
 [deployment]
 build = ["sh", "-c", "pip install pytelegrambotapi openpyxl trafilatura"]

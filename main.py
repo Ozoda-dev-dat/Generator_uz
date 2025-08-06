@@ -4098,6 +4098,32 @@ Bu joyni quyidagi xizmatlar orqali o'rganishingiz mumkin:
         print("📱 Bot Telegram orqali foydalanishga tayyor")
         print("🛑 Botni to'xtatish uchun Ctrl+C bosing")
         
+        # Keep-alive mechanism to prevent sleeping
+        def keep_alive():
+            """Keep the bot active with periodic pings"""
+            import time
+            import requests
+            while True:
+                try:
+                    time.sleep(300)  # Every 5 minutes
+                    # Self-ping to stay awake
+                    try:
+                        import socket
+                        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                        s.connect(("127.0.0.1", 8080))
+                        s.close()
+                        print("💓 Keep-alive ping sent")
+                    except:
+                        pass
+                except Exception as e:
+                    print(f"⚠️ Keep-alive error: {e}")
+        
+        # Start keep-alive thread
+        import threading
+        keep_alive_thread = threading.Thread(target=keep_alive, daemon=True)
+        keep_alive_thread.start()
+        print("💓 Keep-alive mechanism started - Bot won't sleep")
+
         # Enhanced polling with better error handling for production
         while True:
             try:
@@ -4106,7 +4132,7 @@ Bu joyni quyidagi xizmatlar orqali o'rganishingiz mumkin:
                 bot.remove_webhook()
                 import time
                 time.sleep(2)
-                bot.infinity_polling(none_stop=True, interval=3, timeout=30, long_polling_timeout=90)
+                bot.infinity_polling(none_stop=True, interval=1, timeout=60, long_polling_timeout=120)
             except Exception as e:
                 print(f"⚠️ Bot ulanishida xatolik: {e}")
                 # Send notification about restart
