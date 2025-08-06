@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: telegram-task-bot
+    env: python
+    plan: free
+    buildCommand: pip install flask openpyxl pytelegrambotapi requests trafilatura gunicorn
+    startCommand: python start_render.py
+    envVars:
+      - key: BOT_TOKEN
+        sync: false
+      - key: ADMIN_CHAT_ID
+        value: "7792775986"
+      - key: ADMIN_CODE
+        value: "1234"
+      - key: PORT
+        value: "10000"
+    healthCheckPath: /health
+    autoDeploy: false
